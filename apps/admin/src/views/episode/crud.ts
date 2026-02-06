@@ -27,8 +27,8 @@ export default function createCrudOptions({ context }: CreateCrudOptionsProps): 
     const { form } = ctx;
     const normalizedForm = {
       ...form,
-      cover: normalizeUploadValue(form.cover),
-      video: normalizeUploadValue(form.video)
+      cover: normalizeUploadValue(form.cover, true),
+      video: normalizeUploadValue(form.video, true)
     };
     const res = await request.put(`${apiPrefix}/update`, normalizedForm);
     return resHandle(res);
@@ -43,8 +43,8 @@ export default function createCrudOptions({ context }: CreateCrudOptionsProps): 
     const { form } = req;
     const normalizedForm = {
       ...form,
-      cover: normalizeUploadValue(form.cover),
-      video: normalizeUploadValue(form.video)
+      cover: normalizeUploadValue(form.cover, true),
+      video: normalizeUploadValue(form.video, true)
     };
     const res = await request.post(`${apiPrefix}`, normalizedForm);
     return resHandle(res);

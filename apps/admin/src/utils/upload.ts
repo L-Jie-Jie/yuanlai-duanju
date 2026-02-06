@@ -67,10 +67,10 @@ export const buildUploadFileList = (value: unknown) => {
 	return value;
 };
 
-export const normalizeUploadValue = (value: unknown) => {
+export const normalizeUploadValue = (value: unknown, asArray = false) => {
 	if (!value) return value;
 	if (Array.isArray(value)) {
-		return value
+		const normalized = value
 			.map((item) => {
 				if (!item) return undefined;
 				if (typeof item === "string") return item;
@@ -81,10 +81,12 @@ export const normalizeUploadValue = (value: unknown) => {
 				return undefined;
 			})
 			.filter(Boolean);
+		return asArray ? normalized : normalized[0];
 	}
 	if (typeof value === "object") {
 		const obj = value as UploadItem;
-		return obj.url || value;
+		if (!obj.url) return value;
+		return asArray ? [obj.url] : obj.url;
 	}
-	return value;
+	return asArray ? [value as string] : value;
 };
