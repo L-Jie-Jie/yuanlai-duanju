@@ -23,12 +23,6 @@ docker compose up -d
 
 > 本地默认账号密码以后台登录页为准；本仓库已支持本地强制登录逻辑。
 
-## 文档
-- 技术文档：`TECHNICAL_DOC.md`
-- 需求文档：`REQUIREMENTS_PRIORITIES.md`
-- 交付摘要：`DELIVERY_GUIDE.md`
-- 环境变量模板：`ENV_TEMPLATE.md`
-
 ## 已知限制
 - 支付 UI 已有，但后端支付闭环需二次开发
 - 生产环境需替换 MinIO 为 OSS/CDN
