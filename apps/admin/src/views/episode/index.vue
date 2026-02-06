@@ -12,6 +12,7 @@
 
 <script lang="ts" setup>
 import { request } from "@/service/request";
+import { buildUploadFileList } from "@/utils/upload";
 
 import { onMounted, ref } from "vue";
 import { useFs, dict } from "@fast-crud/fast-crud";
@@ -86,6 +87,10 @@ const context: any = {
 			column: {
 				width: 100,
 			},
+			valueBuilder(context: any) {
+				const { value, row, key } = context;
+				row[key] = buildUploadFileList(value);
+			},
 			form: {
 				show: false,
 				component: {
@@ -106,6 +111,10 @@ const context: any = {
 			type: "file-uploader",
 			column: {
 				show: false,
+			},
+			valueBuilder(context: any) {
+				const { value, row, key } = context;
+				row[key] = buildUploadFileList(value);
 			},
 			form: {
 				component: {

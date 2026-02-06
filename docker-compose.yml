@@ -30,10 +30,12 @@ services:
     command: sh -c "apk add --no-cache ffmpeg && mkdir -p /app/screenshots && node /app/app.js"
     volumes:
       - ./apps/server/config/prod.js:/app/config/prod.js:ro
+      - ./apps/server/app.js:/app/app.js:ro
       - ./apps/server/route/public.js:/app/route/public.js:ro
       - ./apps/server/route/admin/auth.js:/app/route/admin/auth.js:ro
 
   admin:
+    build: ./apps/admin
     image: fastshort/admin:latest
     restart: always
     ports:

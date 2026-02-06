@@ -6,6 +6,7 @@
 
 <script lang="ts" setup>
 import { onMounted } from "vue";
+import { buildUploadFileList } from "@/utils/upload";
 import { useFs, dict } from "@fast-crud/fast-crud";
 import createCrudOptions from "./crud";
 import { useRouter } from "vue-router";
@@ -44,6 +45,10 @@ const context: any = {
 		cover: {
 			title: "封面",
 			type: "image-uploader",
+			valueBuilder(context: any) {
+				const { value, row, key } = context;
+				row[key] = buildUploadFileList(value);
+			},
 			form: {
 				component: {
 					max: 1,

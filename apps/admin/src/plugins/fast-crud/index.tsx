@@ -148,7 +148,8 @@ function install(app: App, options: FsSetupOpts = {}) {
 					headers: {
 						"Content-Type": "multipart/form-data",
 					},
-					timeout: 60000,
+					// Large video uploads need longer than 60s
+					timeout: 10 * 60 * 1000,
 					onUploadProgress(progress) {
 						onProgress({
 							percent: Math.round((progress.loaded / progress.total!) * 100),
@@ -156,7 +157,24 @@ function install(app: App, options: FsSetupOpts = {}) {
 					},
 				});
 				// 上传完成后的结果，一般返回个url 或者key,具体看你的后台返回啥
-				return res.data.data;
+				const payload = res.data.data || {};
+				return {
+					...payload,
+					name: (file as any)?.name || payload?.name,
+				};
+			},
+			async successHandle(ret: any) {
+				if (!ret) return ret;
+				const url = typeof ret === "string" ? ret : ret.url;
+				if (!url) return ret;
+				const name =
+					typeof ret === "object" && ret?.name ? ret.name : url.split("/").pop() || "file";
+				const key = typeof ret === "object" ? ret?.key : undefined;
+				return {
+					url,
+					key,
+					name,
+				};
 			},
 			// async successHandle(ret: string) {
 			// 	console.log(ret);

@@ -8,6 +8,7 @@ import type {
   CreateCrudOptionsProps
 } from '@fast-crud/fast-crud';
 import { request } from '@/service/request';
+import { normalizeUploadValue } from '@/utils/upload';
 
 function resHandle(res: any) {
   return res.data;
@@ -24,7 +25,12 @@ export default function createCrudOptions({ context }: CreateCrudOptionsProps): 
   };
   const editRequest = async (ctx: EditReq) => {
     const { form } = ctx;
-    const res = await request.put(`${apiPrefix}/update`, form);
+    const normalizedForm = {
+      ...form,
+      cover: normalizeUploadValue(form.cover),
+      video: normalizeUploadValue(form.video)
+    };
+    const res = await request.put(`${apiPrefix}/update`, normalizedForm);
     return resHandle(res);
   };
   const delRequest = async (ctx: DelReq) => {
@@ -35,7 +41,12 @@ export default function createCrudOptions({ context }: CreateCrudOptionsProps): 
 
   const addRequest = async (req: AddReq) => {
     const { form } = req;
-    const res = await request.post(`${apiPrefix}`, form);
+    const normalizedForm = {
+      ...form,
+      cover: normalizeUploadValue(form.cover),
+      video: normalizeUploadValue(form.video)
+    };
+    const res = await request.post(`${apiPrefix}`, normalizedForm);
     return resHandle(res);
   };
 
