@@ -1,9 +1,9 @@
-import mongo from '#@/lib/mongo.js'
+﻿import mongo from '#@/lib/mongo.js'
 import { success, fail } from '#@/lib/response.js'
 import { ObjectId } from 'mongodb'
 
 export default {
-  // 默认方法 GET
+  // 榛樿鏂规硶 GET
   async index(ctx) {
     const { name, id, pageNum, pageSize } = ctx.query
 
@@ -34,10 +34,10 @@ export default {
         list
       })
     } catch (error) {
-      fail(ctx, '服务器错误')
+      fail(ctx, 'Server error')
     }
   },
-  // 返回列表，支持分页 POST
+  // 杩斿洖鍒楄〃锛屾敮鎸佸垎椤?POST
   async list(ctx) {
     try {
       const { page, form, sort } = ctx.request.body
@@ -78,10 +78,10 @@ export default {
       })
     } catch (error) {
       console.log(error)
-      fail(ctx, '服务器错误')
+      fail(ctx, 'Server error')
     }
   },
-  // 增加 POST
+  // 澧炲姞 POST
   async create(ctx) {
     const document = ctx.request.body
     document.createdAt = new Date().getTime()
@@ -90,10 +90,10 @@ export default {
     try {
       success(ctx, { id: ret.insertedId })
     } catch (error) {
-      fail(ctx, '服务器错误')
+      fail(ctx, 'Server error')
     }
   },
-  // 获取一个信息 GET
+  // 鑾峰彇涓€涓俊鎭?GET
   async get(ctx) {
     try {
       const { id } = ctx.params
@@ -102,10 +102,10 @@ export default {
       success(ctx, user)
     } catch (error) {
       console.log(error)
-      fail(ctx, '服务器错误')
+      fail(ctx, 'Server error')
     }
   },
-  // 更新 PUT
+  // 鏇存柊 PUT
   async update(ctx) {
     try {
       const document = ctx.request.body
@@ -123,62 +123,65 @@ export default {
         )
 
       if (!ret.value) {
-        fail(ctx, '未找到对应记录')
+        fail(ctx, 'Server error')
         return
       }
       success(ctx, ret.value)
     } catch (error) {
       console.log(error)
-      fail(ctx, '服务器错误')
+      fail(ctx, 'Server error')
     }
   },
-  // 删除 DELETE
+  // 鍒犻櫎 DELETE
   async delete(ctx) {
     try {
       const { id } = ctx.params
       const ret = await mongo.col('user').deleteOne({ _id: new ObjectId(id) })
-      if (ret.deleteCount === 0) {
-        fail(ctx, '删除失败')
+      if (ret.deletedCount === 0) {
+        fail(ctx, '鍒犻櫎澶辫触')
         return
       }
       success(ctx, {})
     } catch (error) {
-      fail(ctx, '服务器错误')
+      fail(ctx, 'Server error')
     }
   },
-  // 批量删除
+  // 鎵归噺鍒犻櫎
   async deleteMany(ctx) {
     let { ids } = ctx.request.body
 
     try {
       ids = ids.map((id) => new ObjectId(id))
       const ret = await mongo.col('user').deleteMany({ _id: { $in: ids } })
-      if (ret.deleteCount === 0) {
-        fail(ctx, '删除失败')
+      if (ret.deletedCount === 0) {
+        fail(ctx, '鍒犻櫎澶辫触')
         return
       }
       success(ctx, {})
     } catch (error) {
-      fail(ctx, '服务器错误')
+      fail(ctx, 'Server error')
     }
   },
-  // 数据字典
+  // 鏁版嵁瀛楀吀
   async dict(ctx) {
     try {
-      // 这里用query 传递数据字典的 编号，可以用一个方法实现多个字典。
+      // 杩欓噷鐢╭uery 浼犻€掓暟鎹瓧鍏哥殑 缂栧彿锛屽彲浠ョ敤涓€涓柟娉曞疄鐜板涓瓧鍏搞€?
       let { id } = ctx.query
       id = Number(id || 0)
 
       const data = [
         [
-          { value: true, label: '开启', color: 'success' },
-          { value: false, label: '关闭', color: 'warning' }
+          { value: true, label: 'Enabled', color: 'success' },
+          { value: false, label: '鍏抽棴', color: 'warning' }
         ]
       ]
       success(ctx, data[id])
     } catch (error) {
       console.log(error)
-      fail(ctx, '服务器错误')
+      fail(ctx, 'Server error')
     }
   }
 }
+
+
+

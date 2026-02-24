@@ -1,4 +1,4 @@
-import md5 from 'md5'
+﻿import md5 from 'md5'
 import moment from 'moment/moment.js'
 import mongo from '#@/lib/mongo.js'
 import { success, fail, jwtoken } from '#@/lib/response.js'
@@ -15,7 +15,57 @@ import mime from 'mime-types'
 import { createHash } from 'crypto'
 import ffmpeg from 'fluent-ffmpeg'
 
+let bucketEnsured = false
+
+const ensureS3Config = () => {
+  const required = ['endpoint', 'key', 'secret', 'bucket', 'site']
+  const missing = required.filter((k) => !config?.s3?.[k])
+  if (missing.length > 0) {
+    throw new Error(`S3 config missing: ${missing.join(', ')}`)
+  }
+}
+
+const getPublicReadPolicy = (bucket) =>
+  JSON.stringify({
+    Version: '2012-10-17',
+    Statement: [
+      {
+        Sid: 'PublicReadGetObject',
+        Effect: 'Allow',
+        Principal: '*',
+        Action: ['s3:GetObject'],
+        Resource: [`arn:aws:s3:::${bucket}/*`]
+      }
+    ]
+  })
+
+const ensureBucket = async (s3) => {
+  if (bucketEnsured) return
+  const Bucket = config.s3.bucket
+  let exists = false
+  try {
+    await s3.headBucket({ Bucket }).promise()
+    exists = true
+  } catch (error) {
+    if (error.code !== 'NotFound' && error.code !== 'NoSuchBucket') {
+      throw error
+    }
+  }
+
+  if (!exists) {
+    await s3.createBucket({ Bucket }).promise()
+  }
+  await s3
+    .putBucketPolicy({
+      Bucket,
+      Policy: getPublicReadPolicy(Bucket)
+    })
+    .promise()
+  bucketEnsured = true
+}
+
 const uploadS3 = async (filepath, filename) => {
+  ensureS3Config()
   const s3 = new S3({
     endpoint: config.s3.endpoint,
     accessKeyId: config.s3.key,
@@ -23,6 +73,7 @@ const uploadS3 = async (filepath, filename) => {
     signatureVersion: 'v4',
     s3ForcePathStyle: true
   })
+  await ensureBucket(s3)
   const uploadParams = { Bucket: config.s3.bucket, Key: filename }
   let url = ''
   try {
@@ -36,9 +87,61 @@ const uploadS3 = async (filepath, filename) => {
     uploadParams.Body = fileStream
 
     const stored = await s3.upload(uploadParams).promise()
-    url = config.s3.site + stored.key
+    const objectKey = stored.Key || stored.key || filename
+    url = config.s3.site + objectKey
   }
   return url
+}
+
+const createAndUploadVideoCover = async (videoPath, screenshotDir, hash, filename) => {
+  return new Promise((resolve) => {
+    ffmpeg(videoPath)
+      .on('end', async function () {
+        const screenshotfile = path.join(screenshotDir, `${hash}.png`)
+        try {
+          await uploadS3(screenshotfile, filename + '.png')
+        } catch (error) {
+          console.log('upload video cover failed:', error.message)
+        } finally {
+          if (fs.existsSync(screenshotfile)) {
+            fs.unlinkSync(screenshotfile)
+          }
+          resolve()
+        }
+      })
+      .on('error', function (error) {
+        // ffmpeg not installed or runtime failed; keep main video upload available.
+        console.log('generate video cover failed:', error.message)
+        resolve()
+      })
+      .screenshots({
+        timestamps: [0],
+        filename: `${hash}.png`,
+        folder: screenshotDir
+      })
+  })
+}
+
+const normalizeMediaValue = (value) => {
+  const list = Array.isArray(value) ? value : [value]
+  return list
+    .filter(Boolean)
+    .map((item) => String(item).trim())
+    .filter(Boolean)
+    .map((item) => {
+      if (/^https?:\/\//i.test(item)) return item
+      if (item.startsWith('/')) return item
+      if (config?.s3?.site) return `${config.s3.site}${item}`
+      return item
+    })
+}
+
+const normalizeEpisodeMedia = (episode) => {
+  return {
+    ...episode,
+    video: normalizeMediaValue(episode?.video),
+    cover: normalizeMediaValue(episode?.cover)
+  }
 }
 export default {
   async index(ctx) {
@@ -47,7 +150,7 @@ export default {
       version: process.env.npm_package_version
     })
   },
-  // 上传文件，头像，视频，等等
+  // 涓婁紶鏂囦欢锛屽ご鍍忥紝瑙嗛锛岀瓑绛?
   async upload(ctx) {
     try {
       const start = new Date().getTime()
@@ -55,11 +158,11 @@ export default {
       const { filepath, mimetype } = ctx.request.files.file
       const fileExtension = mime.extension(mimetype)
       if (!exts.includes(fileExtension)) {
-        fail(ctx, '文件类型错误')
+        fail(ctx, '鏂囦欢绫诲瀷閿欒')
         return
       }
       console.log(filepath, fileExtension)
-      // 计算文件的md5
+      // 璁＄畻鏂囦欢鐨刴d5
       const buff = fs.readFileSync(filepath)
       const hash = createHash('md5').update(buff).digest('hex')
 
@@ -68,24 +171,14 @@ export default {
       if (fileExtension == 'mp4') {
         const screenshotDir = path.join(process.cwd(), 'screenshots')
         fs.mkdirSync(screenshotDir, { recursive: true })
-        // 视频和截图上传
+        // 瑙嗛鍜屾埅鍥句笂浼?
         const filename = `video/${dayjs().format(
           'YYYYMMDD'
         )}/${hash}.${fileExtension}`
-        ffmpeg(filepath)
-          .on('end', async function () {
-            const screenshotfile = path.join(screenshotDir, `${hash}.png`)
-            await uploadS3(screenshotfile, filename + '.png')
-            fs.unlinkSync(screenshotfile)
-          })
-          .screenshots({
-            timestamps: [0],
-            filename: `${hash}.png`,
-            folder: screenshotDir
-          })
+        void createAndUploadVideoCover(filepath, screenshotDir, hash, filename)
         url = await uploadS3(filepath, filename)
       } else {
-        // 头像或者图片上传
+        // 澶村儚鎴栬€呭浘鐗囦笂浼?
         const filename = `avatar/${dayjs().format(
           'YYYYMMDD'
         )}/${hash}.${fileExtension}`
@@ -100,7 +193,7 @@ export default {
       fail(ctx, error.message)
     }
   },
-  // 注册匿名用户
+  // 娉ㄥ唽鍖垮悕鐢ㄦ埛
   async anonymous(ctx) {
     try {
       const username = 'Visitor' + util.randomString(4, 3)
@@ -130,7 +223,7 @@ export default {
       fail(ctx, 'Server error')
     }
   },
-  // 用户注册
+  // 鐢ㄦ埛娉ㄥ唽
   async register(ctx) {
     try {
       const { username, password, repassword, mobile, _id } = ctx.request.body
@@ -174,7 +267,7 @@ export default {
     }
   },
 
-  // 用户登录
+  // 鐢ㄦ埛鐧诲綍
   async login(ctx) {
     try {
       const { username, password } = ctx.request.body
@@ -197,7 +290,7 @@ export default {
       fail(ctx, 'Server error')
     }
   },
-  // 首页推荐内容
+  // 棣栭〉鎺ㄨ崘鍐呭
   async home(ctx) {
     const recommend = await mongo
       .col('series')
@@ -246,7 +339,7 @@ export default {
     success(ctx, data)
   },
 
-  // 随机短视频
+  // 闅忔満鐭棰?
   async short(ctx) {
     const episodes = await mongo
       .col('episode')
@@ -289,13 +382,15 @@ export default {
       .toArray()
 
     try {
-      success(ctx, episodes)
+      success(
+        ctx,
+        episodes.map((episode) => normalizeEpisodeMedia(episode))
+      )
     } catch (error) {
       fail(ctx, 'Server error')
     }
   },
-  // 获取某一个剧集的所有信息
-  // TODO 某些没付款的信息不能返回。
+  // 鑾峰彇鏌愪竴涓墽闆嗙殑鎵€鏈変俊鎭?
   async series(ctx) {
     const { id } = ctx.request.body
 
@@ -308,7 +403,10 @@ export default {
       .toArray()
 
     try {
-      success(ctx, episodes)
+      success(
+        ctx,
+        episodes.map((episode) => normalizeEpisodeMedia(episode))
+      )
     } catch (error) {
       fail(ctx, 'Server error')
     }

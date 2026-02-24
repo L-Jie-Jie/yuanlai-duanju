@@ -1,7 +1,7 @@
 {
     "pages": [
         {
-            "path": "pages/index/index",
+            "path": "pages/home/main",
             "style": {
                 "app-plus": {
                     "titleNView": false
@@ -10,7 +10,7 @@
         },
         // #ifdef APP
         {
-            "path": "pages/player/app/short",
+            "path": "pages/viewer/native/clips",
             "style": {
                 "app-plus": {
                     "titleNView": false,
@@ -19,7 +19,7 @@
             }
         },
         {
-            "path": "pages/player/app/series",
+            "path": "pages/viewer/native/collection",
             "style": {
                 "app-plus": {
                     "titleNView": false,
@@ -30,7 +30,7 @@
         // #endif
         // #ifdef WEB || MP-WEIXIN
         {
-            "path": "pages/player/web/short",
+            "path": "pages/viewer/web/clips",
             "style": {
                 "app-plus": {
                     "titleNView": false,
@@ -39,7 +39,7 @@
             }
         },
         {
-            "path": "pages/player/web/series",
+            "path": "pages/viewer/web/collection",
             "style": {
                 "app-plus": {
                     "titleNView": false,
@@ -49,7 +49,7 @@
         },
         // #endif
         {
-            "path": "pages/profile/favorite",
+            "path": "pages/account/bookmark",
             "style": {
                 "app-plus": {
                     "titleNView": false
@@ -57,7 +57,7 @@
             }
         },
         {
-            "path": "pages/profile/profile",
+            "path": "pages/account/center",
             "style": {
                 "app-plus": {
                     "titleNView": false
@@ -65,7 +65,7 @@
             }
         },
         {
-            "path": "pages/profile/topup",
+            "path": "pages/account/recharge",
             "style": {
                 "app-plus": {
                     "titleNView": false
@@ -73,7 +73,7 @@
             }
         },
         {
-            "path": "pages/profile/wallet",
+            "path": "pages/account/balance",
             "style": {
                 "app-plus": {
                     "titleNView": false
@@ -81,7 +81,7 @@
             }
         },
         {
-            "path": "pages/profile/register",
+            "path": "pages/account/signup",
             "style": {
                 "app-plus": {
                     "titleNView": false
@@ -89,7 +89,7 @@
             }
         },
         {
-            "path": "pages/profile/login",
+            "path": "pages/account/signin",
             "style": {
                 "app-plus": {
                     "titleNView": false
@@ -98,20 +98,20 @@
         }
     ],
     "tabBar": {
-        "color": "#707070",
-        "selectedColor": "#FFFFFF",
-        "backgroundColor": "#181818",
+        "color": "#7F8FA0",
+        "selectedColor": "#14B87A",
+        "backgroundColor": "#0F151C",
         "iconWidth": "20px",
         "list": [
             {
-                "pagePath": "pages/index/index",
+                "pagePath": "pages/home/main",
                 "text": "%discover%",
                 "iconPath": "static/tabbar/a2.png",
                 "selectedIconPath": "static/tabbar/a.png"
             },
             // #ifdef APP
             {
-                "pagePath": "pages/player/app/short",
+                "pagePath": "pages/viewer/native/clips",
                 "text": "%shorts%",
                 "iconPath": "static/tabbar/b2.png",
                 "selectedIconPath": "static/tabbar/b.png"
@@ -119,20 +119,20 @@
             // #endif
             // #ifdef WEB || MP-WEIXIN
             {
-                "pagePath": "pages/player/web/short",
+                "pagePath": "pages/viewer/web/clips",
                 "text": "%shorts%",
                 "iconPath": "static/tabbar/b2.png",
                 "selectedIconPath": "static/tabbar/b.png"
             },
             // #endif
             {
-                "pagePath": "pages/profile/favorite",
+                "pagePath": "pages/account/bookmark",
                 "text": "%favorite%",
                 "iconPath": "static/tabbar/c2.png",
                 "selectedIconPath": "static/tabbar/c.png"
             },
             {
-                "pagePath": "pages/profile/profile",
+                "pagePath": "pages/account/center",
                 "text": "%profile%",
                 "iconPath": "static/tabbar/d2.png",
                 "selectedIconPath": "static/tabbar/d.png"
@@ -140,10 +140,10 @@
         ]
     },
     "globalStyle": {
-        "navigationBarTextStyle": "black",
+        "navigationBarTextStyle": "white",
         "navigationBarTitleText": "%app.name%",
-        "navigationBarBackgroundColor": "#181818",
-        "backgroundColor": "#181818",
+        "navigationBarBackgroundColor": "#0F151C",
+        "backgroundColor": "#0F151C",
         "navigationStyle": "custom"
     }
 }

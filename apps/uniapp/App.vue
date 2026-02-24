@@ -20,10 +20,10 @@ export default {
 uni-button {
   line-height: 1.8;
 }
-/deep/ .uni-icon_toast {
+::v-deep .uni-icon_toast {
   padding-bottom: 10px;
 }
-/deep/ .uni-toast {
+::v-deep .uni-toast {
   padding: 0 20px;
 }
 page {

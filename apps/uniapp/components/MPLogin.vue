@@ -3,7 +3,7 @@
     <view class="container">
       <!-- 标题 -->
       <view class="headline">
-        <text>ShortTV 申请</text>
+        <text>元来短剧 申请</text>
         <text>获取你的昵称、头像</text>
       </view>
 

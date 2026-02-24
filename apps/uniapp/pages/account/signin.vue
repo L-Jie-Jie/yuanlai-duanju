@@ -1,6 +1,6 @@
 <template>
   <view>
-    <view class="logo"> Short TV </view>
+    <view class="logo"> 元来短剧 </view>
     <view class="login">
       <uni-forms
         ref="baseForm"
@@ -136,11 +136,11 @@ export default {
           store.commit('token', token)
           store.commit('user', user)
 
-          uni.setStorageSync('token', token)
+          uni.setStorageSync('x-auth-sig', token)
           uni.setStorageSync('user', JSON.stringify(user))
 
           uni.switchTab({
-            url: '/pages/profile/profile'
+            url: '/pages/account/center'
           })
         })
         .catch((err) => {
@@ -149,12 +149,12 @@ export default {
     },
     async register() {
       uni.navigateTo({
-        url: '/pages/profile/register'
+        url: '/pages/account/signup'
       })
     },
     async lastPassword() {
       uni.navigateTo({
-        url: '/pages/profile/login'
+        url: '/pages/account/signin'
       })
     },
     oauthFacebook() {
@@ -175,10 +175,10 @@ export default {
               const { token, user } = userinfo
               store.commit('token', token)
               store.commit('user', user)
-              uni.setStorageSync('token', token)
+              uni.setStorageSync('x-auth-sig', token)
               uni.setStorageSync('user', JSON.stringify(user))
               uni.switchTab({
-                url: '/pages/profile/profile'
+                url: '/pages/account/center'
               })
             }
           })
@@ -210,10 +210,10 @@ export default {
               const { token, user } = userinfo
               store.commit('token', token)
               store.commit('user', user)
-              uni.setStorageSync('token', token)
+              uni.setStorageSync('x-auth-sig', token)
               uni.setStorageSync('user', JSON.stringify(user))
               uni.switchTab({
-                url: '/pages/profile/profile'
+                url: '/pages/account/center'
               })
             }
           })
@@ -247,10 +247,10 @@ export default {
               const { token, user } = userinfo
               store.commit('token', token)
               store.commit('user', user)
-              uni.setStorageSync('token', token)
+              uni.setStorageSync('x-auth-sig', token)
               uni.setStorageSync('user', JSON.stringify(user))
               uni.switchTab({
-                url: '/pages/profile/profile'
+                url: '/pages/account/center'
               })
             }
           })

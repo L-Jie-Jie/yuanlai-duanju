@@ -2,9 +2,32 @@ version: '3.7'
 
 services:
   mongodb:
-    image: mongo
+    image: mongo:latest
     restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - ./data/mongo:/data/db
 
+  redis:
+    image: redis:latest
+    restart: always
+    ports:
+      - "6379:6379"
+
+  minio:
+    image: minio/minio
+    restart: always
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    command: server /data --console-address ":9001"
+
+  # 下面的服务如果你想在本地通过 npm run dev 跑，其实可以注释掉 server 服务，以免端口冲突
+  # 但如果你想保留也可以，只要确保本地 npm run dev 用的是不同端口，或者你关掉 docker 里的 server
   server:
     image: fastshort/server:latest
     restart: always
@@ -12,10 +35,10 @@ services:
       - mongodb
       - minio
     ports:
-      - 3000:3000
+      - "3000:3000"
     environment:
       PLATFORM: PROD
-      IN_DOCKER: true
+      IN_DOCKER: "true"
       PORT: 3000
       APP_HOST: http://localhost:3000
       MONGODB_HOST: mongodb://mongodb
@@ -34,30 +57,6 @@ services:
       - ./apps/server/route/public.js:/app/route/public.js:ro
       - ./apps/server/route/admin/auth.js:/app/route/admin/auth.js:ro
 
-  admin:
-    build: ./apps/admin
-    image: fastshort/admin:latest
-    restart: always
-    ports:
-      - 3001:80
-  
-  webapp:
-    image: fastshort/webapp:latest
-    restart: always
-    ports:
-      - 3002:80
-
-  minio:
-    image: minio/minio
-    restart: always
-    ports:
-      - 9000:9000
-      - 9001:9001
-    environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
-    command: server /data --console-address ":9001"
-
   minio-init:
     image: minio/mc
     depends_on:
@@ -69,4 +68,3 @@ services:
       mc anonymous set download local/fastshort;
       exit 0;
       "
-  

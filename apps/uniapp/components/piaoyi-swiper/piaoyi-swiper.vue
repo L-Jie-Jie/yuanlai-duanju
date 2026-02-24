@@ -64,12 +64,12 @@ export default {
     clickSwiper(item) {
       // #ifdef APP
       uni.navigateTo({
-        url: `/pages/player/app/series?id=${item._id}`
+        url: `/pages/viewer/native/collection?id=${item._id}`
       })
       // #endif
       // #ifndef APP
       uni.navigateTo({
-        url: `/pages/player/web/series?id=${item._id}`
+        url: `/pages/viewer/web/collection?id=${item._id}`
       })
       // #endif
     }

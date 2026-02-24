@@ -21,12 +21,23 @@ export default function createCrudOptions({ context }: CreateCrudOptionsProps): 
       query.form['series'] = series.value
     }
     const res = await request.post(`${apiPrefix}/list`, query);
-    return resHandle(res);
+    const data = resHandle(res) || {};
+    const records = (data.records || []).map((item: any) => ({
+      ...item,
+      episode: item?.episode == null ? item?.episode : String(item.episode)
+    }));
+    return {
+      ...data,
+      records
+    };
   };
   const editRequest = async (ctx: EditReq) => {
     const { form } = ctx;
+    const episodeValue = Number(form.episode);
     const normalizedForm = {
       ...form,
+      series: form.series || series.value,
+      episode: Number.isFinite(episodeValue) ? episodeValue : form.episode,
       cover: normalizeUploadValue(form.cover, true),
       video: normalizeUploadValue(form.video, true)
     };
@@ -41,8 +52,11 @@ export default function createCrudOptions({ context }: CreateCrudOptionsProps): 
 
   const addRequest = async (req: AddReq) => {
     const { form } = req;
+    const episodeValue = Number(form.episode);
     const normalizedForm = {
       ...form,
+      series: form.series || series.value,
+      episode: Number.isFinite(episodeValue) ? episodeValue : form.episode,
       cover: normalizeUploadValue(form.cover, true),
       video: normalizeUploadValue(form.video, true)
     };

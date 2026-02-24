@@ -56,7 +56,7 @@
 
 <script>
 export default {
-  name: 'progressbar',
+  name: 'swipeProgress',
   components: {},
   props: {
     timeDuration: Number,

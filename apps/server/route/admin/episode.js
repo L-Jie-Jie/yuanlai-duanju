@@ -2,42 +2,50 @@ import mongo from '#@/lib/mongo.js'
 import { success, fail } from '#@/lib/response.js'
 import { ObjectId } from 'mongodb'
 
+function normalizeEpisode(value) {
+  const episode = Number(value)
+  return Number.isFinite(episode) ? episode : null
+}
+
+function isValidObjectId(value) {
+  return typeof value === 'string' && ObjectId.isValid(value)
+}
+
+function buildEpisodeLabel(episode) {
+  return episode === 9999 ? '尾集' : `第${episode}集`
+}
+
+function buildEpisodeOption(episode, disabled = false) {
+  return {
+    value: String(episode),
+    label: buildEpisodeLabel(episode),
+    disabled
+  }
+}
+
 export default {
-  // 默认方法 GET
   async index(ctx) {
-    const { name, id, pageNum, pageSize } = ctx.query
+    let { name, id, pageNum, pageSize } = ctx.query
 
     try {
       pageSize = Number(pageSize || 20)
       pageNum = Number(pageNum || 1)
       const skip = (pageNum - 1) * pageSize
-      const sort = {
-        _id: -1
-      }
-      let query = {}
-      if (name) {
-        query.name = name
-      }
-      if (id) {
-        query.id = id
-      }
-      const list = await mongo
-        .col('episode')
-        .find(query)
-        .sort(sort)
-        .limit(pageSize)
-        .skip(skip)
-        .toArray()
+      const sort = { _id: -1 }
+      const query = {}
+
+      if (name) query.name = name
+      if (id) query.id = id
+
+      const list = await mongo.col('episode').find(query).sort(sort).limit(pageSize).skip(skip).toArray()
       const total = await mongo.col('episode').countDocuments(query)
-      success(ctx, {
-        total,
-        list
-      })
+
+      success(ctx, { total, list })
     } catch (error) {
-      fail(ctx, '服务器错误')
+      fail(ctx, 'Server error')
     }
   },
-  // 返回列表，支持分页 POST
+
   async list(ctx) {
     try {
       const { page, form, sort } = ctx.request.body
@@ -47,7 +55,7 @@ export default {
       if (Object.keys(sort).length !== 0) {
         sorting[sort.prop] = sort.asc ? -1 : 1
       } else {
-        sorting['episode'] = 1
+        sorting.episode = 1
       }
 
       pageSize = Number(pageSize || 20)
@@ -57,19 +65,13 @@ export default {
       const query = {}
       for (const key in form) {
         if (Object.hasOwnProperty.call(form, key)) {
-          const element = form[key]
-          query[key] = { $regex: element }
+          query[key] = { $regex: form[key] }
         }
       }
 
-      const records = await mongo
-        .col('episode')
-        .find(query)
-        .sort(sorting)
-        .limit(pageSize)
-        .skip(offset)
-        .toArray()
+      const records = await mongo.col('episode').find(query).sort(sorting).limit(pageSize).skip(offset).toArray()
       const total = await mongo.col('episode').countDocuments(form)
+
       success(ctx, {
         currentPage,
         pageSize,
@@ -78,172 +80,225 @@ export default {
       })
     } catch (error) {
       console.log(error)
-      fail(ctx, '服务器错误')
+      fail(ctx, 'Server error')
     }
   },
-  // 增加 POST
+
   async create(ctx) {
-    const document = ctx.request.body
-    document.createdAt = new Date().getTime()
-    document.updatedAt = new Date().getTime()
-    if (document.video) {
-      document.cover = [document.video + '.png']
-    }
-    if (document.series) {
-      const series = await mongo.col('series').findOne({
-        _id: new ObjectId(document.series)
-      })
-      if (series) {
-        document.seriesname = series.name
-      }
-    }
-
-    const ret = await mongo.col('episode').insertOne(document)
-    try {
-      success(ctx, { id: ret.insertedId })
-    } catch (error) {
-      fail(ctx, '服务器错误')
-    }
-  },
-  // 获取一个信息 GET
-  async get(ctx) {
-    try {
-      const { id } = ctx.params
-
-      const episode = await mongo
-        .col('episode')
-        .findOne({ _id: new ObjectId(id) })
-      success(ctx, episode)
-    } catch (error) {
-      console.log(error)
-      fail(ctx, '服务器错误')
-    }
-  },
-  // 更新 PUT
-  async update(ctx) {
     try {
       const document = ctx.request.body
-      document.updatedAt = new Date().getTime()
+      document.createdAt = Date.now()
+      document.updatedAt = Date.now()
+      document.episode = normalizeEpisode(document.episode)
 
-      const { _id } = document
-      delete document._id
+      if (!isValidObjectId(document.series)) {
+        fail(ctx, '请选择所属短剧')
+        return
+      }
+      if (document.episode === null) {
+        fail(ctx, '集数格式不正确')
+        return
+      }
+
       if (document.video) {
         document.cover = [document.video + '.png']
       }
-      if (document.series) {
-        const series = await mongo.col('series').findOne({
-          _id: new ObjectId(document.series)
-        })
-        if (series) {
-          document.seriesname = series.name
-        }
+
+      const series = await mongo.col('series').findOne({ _id: new ObjectId(document.series) })
+      if (series) {
+        document.seriesname = series.name
       }
+
+      const exists = await mongo.col('episode').findOne({
+        series: document.series,
+        episode: document.episode
+      })
+      if (exists) {
+        fail(ctx, '同一短剧下集数已存在')
+        return
+      }
+
+      const ret = await mongo.col('episode').insertOne(document)
+      success(ctx, { id: ret.insertedId })
+    } catch (error) {
+      if (error?.code === 11000) {
+        fail(ctx, '同一短剧下集数已存在')
+        return
+      }
+      console.log(error)
+      fail(ctx, 'Server error')
+    }
+  },
+
+  async get(ctx) {
+    try {
+      const { id } = ctx.params
+      const episode = await mongo.col('episode').findOne({ _id: new ObjectId(id) })
+      success(ctx, episode)
+    } catch (error) {
+      console.log(error)
+      fail(ctx, 'Server error')
+    }
+  },
+
+  async update(ctx) {
+    try {
+      const document = ctx.request.body
+      document.updatedAt = Date.now()
+      document.episode = normalizeEpisode(document.episode)
+
+      const { _id } = document
+      delete document._id
+
+      if (!isValidObjectId(document.series)) {
+        fail(ctx, '请选择所属短剧')
+        return
+      }
+      if (document.episode === null) {
+        fail(ctx, '集数格式不正确')
+        return
+      }
+
+      if (document.video) {
+        document.cover = [document.video + '.png']
+      }
+
+      const series = await mongo.col('series').findOne({ _id: new ObjectId(document.series) })
+      if (series) {
+        document.seriesname = series.name
+      }
+
+      const exists = await mongo.col('episode').findOne({
+        _id: { $ne: new ObjectId(_id) },
+        series: document.series,
+        episode: document.episode
+      })
+      if (exists) {
+        fail(ctx, '同一短剧下集数已存在')
+        return
+      }
+
       const ret = await mongo
         .col('episode')
-        .findOneAndUpdate(
-          { _id: new ObjectId(_id) },
-          { $set: document },
-          { returnDocument: 'after', returnNewDocument: true }
-        )
+        .findOneAndUpdate({ _id: new ObjectId(_id) }, { $set: document }, { returnDocument: 'after', returnNewDocument: true })
 
       if (!ret.value) {
-        fail(ctx, '未找到对应记录')
+        fail(ctx, 'Server error')
         return
       }
       success(ctx, ret.value)
     } catch (error) {
+      if (error?.code === 11000) {
+        fail(ctx, '同一短剧下集数已存在')
+        return
+      }
       console.log(error)
-      fail(ctx, '服务器错误')
+      fail(ctx, 'Server error')
     }
   },
-  // 删除 DELETE
+
   async delete(ctx) {
     try {
       const { id } = ctx.params
-      const ret = await mongo
-        .col('episode')
-        .deleteOne({ _id: new ObjectId(id) })
-      if (ret.deleteCount === 0) {
+      const ret = await mongo.col('episode').deleteOne({ _id: new ObjectId(id) })
+      if (ret.deletedCount === 0) {
         fail(ctx, '删除失败')
         return
       }
       success(ctx, {})
     } catch (error) {
-      fail(ctx, '服务器错误')
+      fail(ctx, 'Server error')
     }
   },
-  // 批量删除
+
   async deleteMany(ctx) {
     let { ids } = ctx.request.body
 
     try {
-      ids = ids.map((id) => new ObjectId(id))
+      ids = ids.map((value) => new ObjectId(value))
       const ret = await mongo.col('episode').deleteMany({ _id: { $in: ids } })
-      if (ret.deleteCount === 0) {
+      if (ret.deletedCount === 0) {
         fail(ctx, '删除失败')
         return
       }
       success(ctx, {})
     } catch (error) {
-      fail(ctx, '服务器错误')
+      fail(ctx, 'Server error')
     }
   },
-  // 数据字典
+
   async dict(ctx) {
     try {
       let { id } = ctx.query
       id = Number(id || 0)
-      if (id == 0) {
-        // 这里用query 传递数据字典的 编号，可以用一个方法实现多个字典。
-        const categorys = await mongo
-          .col('series')
-          .find()
-          .sort({
-            order: 1
-          })
-          .toArray()
-        const data = []
-        for (const cat of categorys) {
-          data.push({
-            value: cat._id,
-            label: cat.name,
-            color: cat.pass ? 'success' : 'warning'
-          })
-        }
+
+      if (id === 0) {
+        const categorys = await mongo.col('series').find().sort({ order: 1 }).toArray()
+        const data = categorys.map((cat) => ({
+          value: cat._id,
+          label: cat.name,
+          color: cat.pass ? 'success' : 'warning'
+        }))
         success(ctx, data)
-      } else if (id == 1) {
-        const { series } = ctx.query
-        let start = 1
-        if (series) {
-          const max = await mongo
-            .col('episode')
-            .find({
-              series
-            })
-            .sort({ episode: -1 })
-            .limit(1)
-            .toArray()
-          if (max.length > 0) {
-            start = max[0].episode
+        return
+      }
+
+      if (id === 1) {
+        const { series, currentEpisode } = ctx.query
+        const current = normalizeEpisode(currentEpisode)
+        const data = []
+
+        if (!series) {
+          for (let i = 1; i <= 10; i += 1) {
+            data.push(buildEpisodeOption(i, false))
+          }
+          data.push(buildEpisodeOption(9999, false))
+          success(ctx, data)
+          return
+        }
+
+        const episodeDocs = await mongo
+          .col('episode')
+          .find({ series }, { projection: { episode: 1 } })
+          .toArray()
+
+        const usedEpisodeSet = new Set()
+        let tailUsed = false
+
+        for (const item of episodeDocs) {
+          const ep = normalizeEpisode(item.episode)
+          if (ep === null) continue
+          if (ep === 9999) {
+            tailUsed = true
+            continue
+          }
+          if (ep > 0) usedEpisodeSet.add(ep)
+        }
+
+        if (current !== null) {
+          if (current === 9999) {
+            tailUsed = false
+          } else if (current > 0) {
+            usedEpisodeSet.delete(current)
           }
         }
 
-        const data = []
-        for (const key of Array(10).keys()) {
-          data.push({
-            value: start + key,
-            label: `第${start + key}集`
-          })
+        const maxUsedEpisode = usedEpisodeSet.size > 0 ? Math.max(...usedEpisodeSet) : 0
+        const maxEpisode = current && current > 0 ? Math.max(maxUsedEpisode, current) : maxUsedEpisode
+        const upperBound = Math.max(maxEpisode + 10, 10)
+
+        for (let candidate = 1; candidate <= upperBound; candidate += 1) {
+          const used = usedEpisodeSet.has(candidate)
+          data.push(buildEpisodeOption(candidate, used))
         }
-        data.push({
-          value: 9999,
-          label: `第N集`
-        })
+
+        data.push(buildEpisodeOption(9999, tailUsed))
+
         success(ctx, data)
       }
     } catch (error) {
       console.log(error)
-      fail(ctx, '服务器错误')
+      fail(ctx, 'Server error')
     }
   }
 }

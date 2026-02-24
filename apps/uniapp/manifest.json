@@ -1,7 +1,7 @@
 {
-    "name" : "ShortTV",
+    "name" : "元来短剧",
     "appid" : "__UNI__961D650",
-    "description" : "",
+    "description" : "FastShort short-drama app with a refreshed mint-dark visual theme and streamlined routing.",
     "versionName" : "1.0.2",
     "versionCode" : 102,
     "locale" : "en",
@@ -20,8 +20,8 @@
             "ignoreVersion" : true
         },
         "safearea" : {
-            "background" : "#181818",
-            "backgroundDark" : "#181818",
+            "background" : "#0F151C",
+            "backgroundDark" : "#0F151C",
             "bottom" : {
                 "offset" : "auto"
             }
@@ -60,7 +60,6 @@
                 "idfa" : false
             },
             "sdkConfigs" : {
-                "ad" : {},
                 "oauth" : {
                     "google" : {
                         "clientid" : "209268847453-hh2i28r24johqadhuggrd687kvg35rfn.apps.googleusercontent.com"
@@ -122,25 +121,12 @@
             }
         }
     },
-    "quickapp" : {},
     "mp-weixin" : {
         "appid" : "wx6bdb871fd12a1dc0",
         "setting" : {
             "urlCheck" : false
         },
         "usingComponents" : true
-    },
-    "mp-alipay" : {
-        "usingComponents" : true
-    },
-    "mp-baidu" : {
-        "usingComponents" : true
-    },
-    "mp-toutiao" : {
-        "usingComponents" : true
-    },
-    "uniStatistics" : {
-        "enable" : false
     },
     "vueVersion" : "2",
     "h5" : {

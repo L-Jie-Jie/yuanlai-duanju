@@ -1,9 +1,9 @@
-import mongo from '#@/lib/mongo.js'
+﻿import mongo from '#@/lib/mongo.js'
 import { success, fail } from '#@/lib/response.js'
 import { ObjectId } from 'mongodb'
 
 export default {
-  // 我的收藏，列表
+  // 鎴戠殑鏀惰棌锛屽垪琛?
   async favorite(ctx) {
     try {
       const favorite = await mongo.col('series').find().limit(3).toArray()
@@ -14,10 +14,10 @@ export default {
         favorite
       })
     } catch (error) {
-      fail(ctx, '服务器错误')
+      fail(ctx, 'Server error')
     }
   },
-  // 喜欢/收藏一个剧集
+  // 鍠滄/鏀惰棌涓€涓墽闆?
   async like(ctx) {
     try {
       const { _id } = ctx.state.user
@@ -37,10 +37,10 @@ export default {
 
       success(ctx, {})
     } catch (error) {
-      fail(ctx, '服务器错误')
+      fail(ctx, 'Server error')
     }
   },
-  // 取消喜欢，收藏
+  // 鍙栨秷鍠滄锛屾敹钘?
   async unlike(ctx) {
     try {
       const { _id } = ctx.state.user
@@ -60,7 +60,7 @@ export default {
 
       success(ctx, {})
     } catch (error) {
-      fail(ctx, '服务器错误')
+      fail(ctx, 'Server error')
     }
   },
 
@@ -78,3 +78,4 @@ export default {
     success(ctx, ret.value)
   }
 }
+

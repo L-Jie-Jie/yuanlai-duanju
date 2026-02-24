@@ -10,7 +10,7 @@
 
 <script>
 export default {
-  name: 'topback',
+  name: 'pageBackbar',
   props: {
     title: String,
     episode: Number

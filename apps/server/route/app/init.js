@@ -1,4 +1,4 @@
-import mongo from '#@/lib/mongo.js'
+﻿import mongo from '#@/lib/mongo.js'
 import { success, fail } from '#@/lib/response.js'
 import { readFile } from 'fs/promises'
 
@@ -14,7 +14,7 @@ const getCategory = async (name) => {
 }
 
 export default {
-  // 随机短视频
+  // 闅忔満鐭棰?
   async episode(ctx) {
     const options = { upsert: true }
     const query = {
@@ -32,7 +32,7 @@ export default {
       category: category._id,
       categoryname: category.name,
 
-      username: '阿斯达达',
+      username: '闃挎柉杈捐揪',
       href: '/static/covers/3.jpg',
       title,
       msg: ' mankind',
@@ -57,10 +57,10 @@ export default {
     try {
       success(ctx, episode.value)
     } catch (error) {
-      fail(ctx, '服务器错误')
+      fail(ctx, 'Server error')
     }
   },
-  // 导入剧集
+  // 瀵煎叆鍓ч泦
   async batch(ctx) {
     const options = { upsert: true }
     const categoryList = [
@@ -95,3 +95,4 @@ export default {
     success(ctx, {})
   }
 }
+

@@ -1,6 +1,6 @@
 <template>
   <view>
-    <view class="logo"> Short TV </view>
+    <view class="logo"> 元来短剧 </view>
     <view class="login">
       <uni-forms
         ref="baseForm"
@@ -112,11 +112,11 @@ export default {
           store.commit('token', token)
           store.commit('user', user)
 
-          uni.setStorageSync('token', token)
+          uni.setStorageSync('x-auth-sig', token)
           uni.setStorageSync('user', JSON.stringify(user))
 
           uni.switchTab({
-            url: '/pages/index/index'
+            url: '/pages/home/main'
           })
         })
         .catch((err) => {
@@ -125,7 +125,7 @@ export default {
     },
     login() {
       uni.navigateTo({
-        url: '/pages/profile/login'
+        url: '/pages/account/signin'
       })
     }
   }

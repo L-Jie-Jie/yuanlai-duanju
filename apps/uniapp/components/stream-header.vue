@@ -10,7 +10,7 @@
 
 <script>
 export default {
-  name: 'topbar',
+  name: 'streamHeader',
   props: {
     title: String,
     episode: Number

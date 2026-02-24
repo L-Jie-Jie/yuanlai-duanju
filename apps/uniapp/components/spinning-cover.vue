@@ -73,7 +73,7 @@
 
 <script>
 export default {
-  name: 'cover',
+  name: 'spinningCover',
   props: {
     platform: String,
     cover: String,
