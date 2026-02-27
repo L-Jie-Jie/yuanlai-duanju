@@ -1,9 +1,11 @@
 ﻿import mongo from '#@/lib/mongo.js'
 import { success, fail } from '#@/lib/response.js'
 import { ObjectId } from 'mongodb'
+import redis from '#@/lib/redis.js'
+import util from '#@/lib/util.js'
 
 export default {
-  // 榛樿鏂规硶 GET
+  // 榛樿鏂规硶 GET
   async index(ctx) {
     const { name, id, pageNum, pageSize } = ctx.query
 
@@ -93,7 +95,7 @@ export default {
       fail(ctx, 'Server error')
     }
   },
-  // 鑾峰彇涓€涓俊鎭?GET
+  // 鑾峰彇涓€涓俊鎭?GET
   async get(ctx) {
     try {
       const { id } = ctx.params
@@ -165,7 +167,7 @@ export default {
   // 鏁版嵁瀛楀吀
   async dict(ctx) {
     try {
-      // 杩欓噷鐢╭uery 浼犻€掓暟鎹瓧鍏哥殑 缂栧彿锛屽彲浠ョ敤涓€涓柟娉曞疄鐜板涓瓧鍏搞€?
+      // 杩欓噷鐢╭uery 浼犻€掓暟鎹瓧鍏哥殑 缂栧彿锛屽彲浠ョ敤涓€涓柟娉曞疄鐜板涓瓧鍏搞€?
       let { id } = ctx.query
       id = Number(id || 0)
 
@@ -180,8 +182,108 @@ export default {
       console.log(error)
       fail(ctx, 'Server error')
     }
+  },
+  // 发送验证码
+  async sendCode(ctx) {
+    try {
+      const { phone } = ctx.request.body
+
+      // 验证手机号格式
+      if (!util.isMobile(phone)) {
+        fail(ctx, '请输入正确的手机号')
+        return
+      }
+
+      // 检查手机号是否已注册
+      const existUser = await mongo.col('user').findOne({ phone })
+      if (existUser) {
+        fail(ctx, '该手机号已注册')
+        return
+      }
+
+      // 生成6位数字验证码
+      const code = util.randomString(6, 3)
+
+      // 将验证码存入Redis，有效期5分钟
+      await redis.client.setEx(`sms:${phone}`, 300, code)
+
+      // TODO: 这里应该调用短信服务发送验证码
+      // 开发环境下直接返回验证码（生产环境需要删除）
+      console.log(`验证码: ${code}`)
+
+      success(ctx, { 
+        message: '验证码已发送',
+        // 开发环境返回验证码，生产环境删除此行
+        code: process.env.NODE_ENV === 'development' ? code : undefined
+      })
+    } catch (error) {
+      console.log(error)
+      fail(ctx, '发送验证码失败')
+    }
+  },
+  // 手机号注册
+  async register(ctx) {
+    try {
+      const { phone, password, code } = ctx.request.body
+
+      // 验证必填字段
+      if (!phone || !password || !code) {
+        fail(ctx, '请填写完整信息')
+        return
+      }
+
+      // 验证手机号格式
+      if (!util.isMobile(phone)) {
+        fail(ctx, '请输入正确的手机号')
+        return
+      }
+
+      // 验证密码长度
+      if (password.length < 6) {
+        fail(ctx, '密码长度不能少于6位')
+        return
+      }
+
+      // 检查手机号是否已注册
+      const existUser = await mongo.col('user').findOne({ phone })
+      if (existUser) {
+        fail(ctx, '该手机号已注册')
+        return
+      }
+
+      // 验证验证码
+      const savedCode = await redis.client.get(`sms:${phone}`)
+      if (!savedCode) {
+        fail(ctx, '验证码已过期，请重新获取')
+        return
+      }
+      if (savedCode !== code) {
+        fail(ctx, '验证码错误')
+        return
+      }
+
+      // 创建用户
+      const document = {
+        phone,
+        username: phone, // 默认用户名为手机号
+        password,
+        pass: true, // 默认启用
+        createdAt: new Date().getTime(),
+        updatedAt: new Date().getTime()
+      }
+
+      const ret = await mongo.col('user').insertOne(document)
+
+      // 删除已使用的验证码
+      await redis.client.del(`sms:${phone}`)
+
+      success(ctx, { 
+        id: ret.insertedId,
+        message: '注册成功'
+      })
+    } catch (error) {
+      console.log(error)
+      fail(ctx, '注册失败')
+    }
   }
 }
-
-
-

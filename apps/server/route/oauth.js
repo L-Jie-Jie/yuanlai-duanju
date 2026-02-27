@@ -35,6 +35,87 @@ const findOrCreateUserByOauth = async ({ type, openid, fallbackUser }) => {
 }
 
 export default {
+  // 小程序统一登录接口（支持微信和抖音）
+  async miniapp(ctx) {
+    try {
+      const { platform, code, encryptedData, iv, phoneCode } = ctx.request.body
+      let { _id } = ctx.query
+      
+      if (!platform || !code) {
+        return fail(ctx, 'Missing required parameters')
+      }
+
+      let session, phoneNumber, openid, type
+      
+      // 根据平台调用不同的 API
+      if (platform === 'weixin') {
+        type = 'wechatmp'
+        // 微信小程序登录
+        const miniProgram = new MiniProgram({
+          miniProgram: {
+            appId: config.mp.appId,
+            appSecret: config.mp.appSecret
+          }
+        })
+        
+        session = await miniProgram.getSession(code)
+        if (!session || !session.openid) {
+          return fail(ctx, 'WeChat login failed')
+        }
+        openid = session.openid
+        
+        // 解密手机号（如果有）
+        if (encryptedData && iv) {
+          try {
+            const phoneData = await miniProgram.decryptData(encryptedData, iv, session.session_key)
+            phoneNumber = phoneData.phoneNumber
+          } catch (error) {
+            console.error('Decrypt phone error:', error)
+          }
+        }
+      } else if (platform === 'toutiao') {
+        type = 'douyin'
+        // 抖音小程序登录
+        // TODO: 实现抖音登录逻辑
+        // 需要安装抖音 SDK 或自行实现
+        return fail(ctx, 'Douyin login not implemented yet')
+      } else {
+        return fail(ctx, 'Unsupported platform')
+      }
+
+      // 查找或创建用户
+      if (_id) {
+        await upsertOauth({ type, _id, openid, session })
+      } else {
+        _id = await findOrCreateUserByOauth({
+          type,
+          openid,
+          fallbackUser: { 
+            username: phoneNumber ? `用户${phoneNumber.slice(-4)}` : `${platform}User`,
+            phone: phoneNumber
+          }
+        })
+      }
+
+      const ret = await mongo.col('user').findOneAndUpdate(
+        { _id: new ObjectId(_id) },
+        { 
+          $set: { 
+            openid, 
+            guest: false,
+            ...(phoneNumber && { phone: phoneNumber })
+          } 
+        },
+        { returnDocument: 'after' }
+      )
+      
+      jwtoken(ctx, ret.value)
+    } catch (error) {
+      console.error('Miniapp login error:', error)
+      fail(ctx, 'Login failed')
+    }
+  },
+
   async wechatmp(ctx) {
     try {
       const { code } = ctx.request.body

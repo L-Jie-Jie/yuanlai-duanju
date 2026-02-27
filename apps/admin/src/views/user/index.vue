@@ -22,8 +22,30 @@ const context: any = {
 				resizable: true,
 			},
 			form: {
+				helper: "选填，留空则自动生成"
+			}
+		},
+		phone: {
+			title: "手机号",
+			type: "text",
+			search: { show: true },
+			column: {
+				width: 130,
+				sorter: true,
+				resizable: true,
+			},
+			form: {
 				rules: [
-					{ required: true, message: "请输入用户名" }
+					{ 
+						required: true, 
+						message: "请输入手机号",
+						trigger: ['blur', 'input']
+					},
+					{ 
+						pattern: /^1[3-9]\d{9}$/, 
+						message: "请输入正确的11位手机号",
+						trigger: ['blur', 'input']
+					}
 				]
 			}
 		},
@@ -35,8 +57,19 @@ const context: any = {
 			},
 			form: {
 				rules: [
-					{ required: true, message: "请输入密码" }
-				]
+					{ 
+						required: true, 
+						message: "请输入密码",
+						trigger: ['blur', 'input']
+					}
+				],
+				helper: "编辑时留空则不修改密码"
+			},
+			editForm: {
+				rules: [
+					// 编辑时密码不是必填项
+				],
+				helper: "留空则不修改密码"
 			}
 		},
 		avatar: {

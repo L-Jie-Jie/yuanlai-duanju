@@ -1,6 +1,7 @@
 ﻿import mongo from '#@/lib/mongo.js'
 import { success, fail } from '#@/lib/response.js'
 import { ObjectId } from 'mongodb'
+import util from '#@/lib/util.js'
 
 export default {
   // 榛樿鏂规硶 GET
@@ -83,13 +84,30 @@ export default {
   },
   // 澧炲姞 POST
   async create(ctx) {
-    const document = ctx.request.body
-    document.createdAt = new Date().getTime()
-    document.updatedAt = new Date().getTime()
-    const ret = await mongo.col('user').insertOne(document)
     try {
+      const document = ctx.request.body
+      
+      // 如果没有填写用户名，自动生成
+      if (!document.username || document.username.trim() === '') {
+        document.username = '用户' + util.randomString(5, 3)
+      }
+      
+      // 检查手机号是否已存在
+      if (document.phone) {
+        const existUser = await mongo.col('user').findOne({ phone: document.phone })
+        if (existUser) {
+          fail(ctx, '该手机号已被使用')
+          return
+        }
+      }
+      
+      document.createdAt = new Date().getTime()
+      document.updatedAt = new Date().getTime()
+      
+      const ret = await mongo.col('user').insertOne(document)
       success(ctx, { id: ret.insertedId })
     } catch (error) {
+      console.log(error)
       fail(ctx, 'Server error')
     }
   },
@@ -113,6 +131,23 @@ export default {
 
       const { _id } = document
       delete document._id
+
+      // 如果密码字段为空或未修改，则不更新密码
+      if (!document.password || document.password.trim() === '') {
+        delete document.password
+      }
+
+      // 检查手机号是否已被其他用户使用
+      if (document.phone) {
+        const existUser = await mongo.col('user').findOne({ 
+          phone: document.phone,
+          _id: { $ne: new ObjectId(_id) }
+        })
+        if (existUser) {
+          fail(ctx, '该手机号已被其他用户使用')
+          return
+        }
+      }
 
       const ret = await mongo
         .col('user')

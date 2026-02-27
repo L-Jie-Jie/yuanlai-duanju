@@ -30,39 +30,45 @@
 
           <!-- 登录操作区 -->
           <view class="login-actions">
-            <!-- #ifdef MP-WEIXIN -->
-            <button
-              class="quick-btn btn-wechat"
-              open-type="getPhoneNumber"
-              @getphonenumber="onWechatGetPhone"
-            >
-              <image class="btn-icon" :src="wechatIcon" mode="aspectFit"></image>
-              <text>微信一键登录</text>
-            </button>
-            <!-- #endif -->
-            <!-- #ifndef MP-WEIXIN -->
-            <button class="quick-btn btn-wechat" @click="showUnsupportedTip('微信')">
-              <image class="btn-icon" :src="wechatIcon" mode="aspectFit"></image>
-              <text>微信一键登录</text>
-            </button>
-            <!-- #endif -->
+            <!-- 微信一键登录 -->
+            <block v-if="showWechatBtn">
+              <!-- #ifdef MP-WEIXIN -->
+              <button
+                class="quick-btn btn-wechat"
+                open-type="getPhoneNumber"
+                @getphonenumber="onWechatGetPhone"
+              >
+                <image class="btn-icon" :src="wechatIcon" mode="aspectFit"></image>
+                <text>微信一键登录</text>
+              </button>
+              <!-- #endif -->
+              <!-- #ifdef H5 || APP-PLUS -->
+              <button class="quick-btn btn-wechat" @click="onWechatH5Login">
+                <image class="btn-icon" :src="wechatIcon" mode="aspectFit"></image>
+                <text>微信一键登录</text>
+              </button>
+              <!-- #endif -->
+            </block>
 
-            <!-- #ifdef MP-TOUTIAO -->
-            <button
-              class="quick-btn btn-toutiao"
-              open-type="getPhoneNumber"
-              @getphonenumber="onDouyinGetPhone"
-            >
-              <image class="btn-icon" :src="douyinIcon" mode="aspectFit"></image>
-              <text>抖音一键登录</text>
-            </button>
-            <!-- #endif -->
-            <!-- #ifndef MP-TOUTIAO -->
-            <button class="quick-btn btn-toutiao" @click="showUnsupportedTip('抖音')">
-              <image class="btn-icon" :src="douyinIcon" mode="aspectFit"></image>
-              <text>抖音一键登录</text>
-            </button>
-            <!-- #endif -->
+            <!-- 抖音一键登录 -->
+            <block v-if="showDouyinBtn">
+              <!-- #ifdef MP-TOUTIAO -->
+              <button
+                class="quick-btn btn-toutiao"
+                open-type="getPhoneNumber"
+                @getphonenumber="onDouyinGetPhone"
+              >
+                <image class="btn-icon" :src="douyinIcon" mode="aspectFit"></image>
+                <text>抖音一键登录</text>
+              </button>
+              <!-- #endif -->
+              <!-- #ifdef H5 || APP-PLUS -->
+              <button class="quick-btn btn-toutiao" @click="onDouyinH5Login">
+                <image class="btn-icon" :src="douyinIcon" mode="aspectFit"></image>
+                <text>抖音一键登录</text>
+              </button>
+              <!-- #endif -->
+            </block>
 
             <view class="divider-row">
               <view class="divider-line"></view>
@@ -129,7 +135,7 @@
             
             <view class="register-row">
               <text class="register-tip">还没有账号？</text>
-              <text class="register-link" @click="showForgetTip">免费注册</text>
+              <text class="register-link" @click="goRegister">免费注册</text>
             </view>
           </view>
         </view>
@@ -172,10 +178,59 @@ export default {
       password: '',
       showPassword: false,
       userFocus: false,
-      pwdFocus: false
+      pwdFocus: false,
+      // 环境检测
+      isWeixinMp: false,
+      isDouyinMp: false,
+      isH5: false,
+      isApp: false
+    }
+  },
+  onLoad() {
+    this.detectPlatform()
+  },
+  computed: {
+    // 是否显示微信登录按钮
+    showWechatBtn() {
+      // 微信小程序环境：显示
+      // H5/App环境：显示
+      // 抖音小程序环境：不显示
+      return this.isWeixinMp || this.isH5 || this.isApp
+    },
+    // 是否显示抖音登录按钮
+    showDouyinBtn() {
+      // 抖音小程序环境：显示
+      // H5/App环境：显示
+      // 微信小程序环境：不显示
+      return this.isDouyinMp || this.isH5 || this.isApp
     }
   },
   methods: {
+    // 检测当前运行平台
+    detectPlatform() {
+      // #ifdef MP-WEIXIN
+      this.isWeixinMp = true
+      // #endif
+      
+      // #ifdef MP-TOUTIAO
+      this.isDouyinMp = true
+      // #endif
+      
+      // #ifdef H5
+      this.isH5 = true
+      // #endif
+      
+      // #ifdef APP-PLUS
+      this.isApp = true
+      // #endif
+      
+      console.log('Platform detected:', {
+        isWeixinMp: this.isWeixinMp,
+        isDouyinMp: this.isDouyinMp,
+        isH5: this.isH5,
+        isApp: this.isApp
+      })
+    },
     noop() {
       // 阻止冒泡，真实项目中用来跳转到协议页面
     },
@@ -240,6 +295,11 @@ export default {
         icon: 'none'
       })
     },
+    goRegister() {
+      uni.navigateTo({
+        url: '/pages/account/signup'
+      })
+    },
     async submitPhoneLogin() {
       if (!this.ensureAgreement()) {
         return
@@ -280,7 +340,7 @@ export default {
           provider,
           success: async (loginRes) => {
             try {
-              const userinfo = await request.post('/oauth/miniapp/phoneLogin', {
+              const userinfo = await request.post('/oauth/miniapp', {
                 platform: provider,
                 code: loginRes.code || '',
                 ...phoneAuthPayload
@@ -343,6 +403,36 @@ export default {
           icon: 'none'
         })
       }
+    },
+    // H5/App 环境的微信登录
+    onWechatH5Login() {
+      if (!this.ensureAgreement()) {
+        return
+      }
+      uni.showToast({
+        title: 'H5微信登录开发中，请使用账号密码登录',
+        icon: 'none',
+        duration: 2000
+      })
+      // TODO: 实现微信网页授权登录
+      // 1. 跳转到微信授权页面
+      // 2. 获取授权码
+      // 3. 后端换取 access_token 和用户信息
+    },
+    // H5/App 环境的抖音登录
+    onDouyinH5Login() {
+      if (!this.ensureAgreement()) {
+        return
+      }
+      uni.showToast({
+        title: 'H5抖音登录开发中，请使用账号密码登录',
+        icon: 'none',
+        duration: 2000
+      })
+      // TODO: 实现抖音网页授权登录
+      // 1. 跳转到抖音授权页面
+      // 2. 获取授权码
+      // 3. 后端换取 access_token 和用户信息
     }
   }
 }

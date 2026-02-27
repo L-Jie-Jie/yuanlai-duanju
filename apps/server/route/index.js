@@ -10,7 +10,7 @@ const routersAdmin = await loadModule(
 )
 router.route(routersAdmin)
 
-const routersApp = await loadModule(['init'], '/app')
+const routersApp = await loadModule(['init', 'user'], '/app')
 router.route(routersApp)
 
 const profilePublic = await loadModule(['profile'])

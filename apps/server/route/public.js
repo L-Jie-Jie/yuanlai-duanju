@@ -272,7 +272,14 @@ export default {
     try {
       const { username, password } = ctx.request.body
       // console.log('/login', username, password)
-      const res = await mongo.col('user').findOne({ username, pass: true })
+      
+      // 支持用户名或手机号登录
+      const res = await mongo.col('user').findOne({ 
+        $or: [
+          { username, pass: true },
+          { phone: username, pass: true }
+        ]
+      })
 
       if (!res) {
         fail(ctx, 'The user does not exist')
