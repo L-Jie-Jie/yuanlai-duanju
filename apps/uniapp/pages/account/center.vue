@@ -1,92 +1,72 @@
 <template>
-  <view class="m5c-canvas-shell">
-    <view class="m5c-safe-gap"></view>
-    <view class="m5c-page-headline">{{ $t('profile') }}</view>
+  <view class="profile-shell">
+    <!-- 氛围背景光效 -->
+    <view class="bg-glow"></view>
+    
+    <!-- 顶部标题栏 -->
+    <view class="safe-gap"></view>
+    <view class="page-headline">{{ $t('profile') }}</view>
 
-    <view class="m5c-profile-card" @click="triggerMpIdentityPatch">
-      <view class="m5c-avatar-ring">
-        <image
-          class="m5c-avatar-core"
-          :src="user.avatar || '/static/default.jpg'"
-          mode="aspectFill"
-        ></image>
-      </view>
-      <text class="m5c-name-text">{{ user.username || 'Visitor' }}</text>
-      <text class="m5c-uid-text" @click.stop="handleUidTapBurst(user._id)">
-        UID: {{ user._id || '--' }}
-      </text>
-      <view
-        class="m5c-signin-entry"
-        v-if="!token || (user && user.guest)"
-        @click.stop="routeSigninBridge"
-      >
-        {{ $t('signin') }}
-      </view>
-    </view>
-
-    <view class="m5c-asset-grid">
-      <view class="m5c-asset-tile" @click="goWalletVault">
-        <view class="m5c-asset-topline">
-          <uni-icons type="wallet" color="#72b9ff" size="19"></uni-icons>
-          <text class="m5c-asset-label">My Wallet</text>
+    <!-- 主内容区 -->
+    <scroll-view class="main-content" scroll-y enhanced :show-scrollbar="false">
+      <!-- 个人信息卡片 -->
+      <view class="profile-card glass-panel" @click="triggerMpIdentityPatch">
+        <view class="avatar-ring">
+          <image
+            class="avatar-core"
+            :src="user.avatar || '/static/default.jpg'"
+            mode="aspectFill"
+          ></image>
         </view>
-        <text class="m5c-asset-value">{{ walletCoinEcho }} Coins</text>
-      </view>
-
-      <view class="m5c-asset-tile m5c-asset-tile--accent" @click="goRechargeDock">
-        <view class="m5c-asset-topline">
-          <uni-icons type="plus" color="#ffd6c2" size="18"></uni-icons>
-          <text class="m5c-asset-label">Top Up</text>
-        </view>
-        <text class="m5c-asset-value">{{ walletBonusEcho }} Bonus</text>
-      </view>
-    </view>
-
-    <view class="m5c-menu-matrix">
-      <view
-        class="m5c-menu-node"
-        v-for="node in entryDeck"
-        :key="node.axisKey"
-        @click="dispatchMenuNode(node.axisKey)"
-      >
-        <view class="m5c-menu-main">
-          <uni-icons
-            custom-prefix="iconfont"
-            :type="node.iconGlyph"
-            color="#d9e6f6"
-            size="18"
-          ></uni-icons>
-          <text class="m5c-menu-caption">{{ node.labelText }}</text>
-        </view>
-        <uni-icons type="right" color="#6f8199" size="14"></uni-icons>
-      </view>
-    </view>
-
-    <view class="m5c-logout-wrap" v-if="token && user && !user.guest">
-      <button class="m5c-logout-btn" type="warn" @click="clearSessionBridge">
-        {{ $t('logout') }}
-      </button>
-    </view>
-
-    <uni-popup type="bottom" ref="localeSheetPortal">
-      <view class="m5c-locale-sheet">
-        <text class="m5c-locale-title">{{ $t('languagesetting') }}</text>
-        <view
-          class="m5c-locale-row"
-          v-for="dialect in localeDeck"
-          :key="dialect.stamp"
-          @click="applyLocaleOption(dialect.stamp)"
+        <text class="name-text">{{ user.username || 'Visitor' }}</text>
+        <text class="uid-text" @click.stop="handleUidTapBurst(user._id)">
+          UID: {{ user._id || '--' }}
+        </text>
+        
+        <!-- 登录按钮 -->
+        <button
+          class="signin-btn"
+          v-if="!token || (user && user.guest)"
+          @click.stop="routeSigninBridge"
         >
-          <text class="m5c-locale-name">{{ dialect.label }}</text>
-          <uni-icons
-            v-if="currentLocaleTag === dialect.stamp"
-            type="checkmarkempty"
-            color="#72b9ff"
-            size="20"
-          ></uni-icons>
+          {{ $t('signin') }}
+        </button>
+      </view>
+
+      <!-- 菜单列表区 -->
+      <view class="menu-matrix glass-panel">
+        <view
+          class="menu-node"
+          v-for="node in entryDeck"
+          :key="node.axisKey"
+          @click="dispatchMenuNode(node.axisKey)"
+        >
+          <view class="menu-main">
+            <!-- 统一使用原生uni-icons -->
+            <uni-icons
+              :type="node.iconGlyph"
+              color="#E5B567"
+              size="22"
+            ></uni-icons>
+            <text class="menu-caption">{{ node.labelText }}</text>
+          </view>
+          <uni-icons type="right" color="rgba(255,255,255,0.4)" size="16"></uni-icons>
         </view>
       </view>
-    </uni-popup>
+
+      <!-- 退出登录 -->
+      <view class="logout-wrap" v-if="token && user && !user.guest">
+        <button class="logout-btn glass-panel" @click="clearSessionBridge">
+          <text class="logout-text">{{ $t('logout') }}</text>
+        </button>
+      </view>
+
+      <!-- 底部安全留白，为自定义Tabbar让出空间 -->
+      <view class="safe-bottom"></view>
+    </scroll-view>
+
+    <!-- 自定义TabBar (使用全局组件) -->
+    <CustomTabBar current="profile" />
 
     <!-- #ifdef MP-WEIXIN -->
     <MPLogin
@@ -103,11 +83,13 @@ import { mapState } from 'vuex'
 import store from '@/store/index.js'
 import request from '@/common/request'
 import MPLogin from '@/components/MPLogin.vue'
+import CustomTabBar from '@/components/CustomTabBar.vue'
 
 export default {
   name: 'accountCenterHub',
   components: {
-    MPLogin
+    MPLogin,
+    CustomTabBar
   },
   data() {
     return {
@@ -121,66 +103,93 @@ export default {
       user: (state) => state.user,
       token: (state) => state.token
     }),
-    currentLocaleTag() {
-      return this.$i18n.locale
-    },
-    walletCoinEcho() {
-      const rawCoin = Number(this.user?.coin)
-      return Number.isFinite(rawCoin) ? rawCoin : 100
-    },
-    walletBonusEcho() {
-      const rawBonus = Number(this.user?.bonus)
-      return Number.isFinite(rawBonus) ? rawBonus : 0
-    },
     entryDeck() {
+      // 隐藏了活动奖励和语言选择，仅保留反馈和设置
       return [
         {
-          axisKey: 'reward_portal',
-          iconGlyph: 'icon-lipin',
-          labelText: this.$t('rewards')
-        },
-        {
           axisKey: 'feedback_portal',
-          iconGlyph: 'icon-xiaoxi',
-          labelText: this.$t('feedback')
-        },
-        {
-          axisKey: 'locale_portal',
-          iconGlyph: 'icon-shequ',
-          labelText: this.$t('language')
+          iconGlyph: 'chat',
+          labelText: this.$t('feedback') || '意见反馈'
         },
         {
           axisKey: 'setting_portal',
-          iconGlyph: 'icon-shezhi',
-          labelText: this.$t('setting')
-        }
-      ]
-    },
-    localeDeck() {
-      return [
-        {
-          stamp: 'en',
-          label: this.$t('english')
-        },
-        {
-          stamp: 'zh-Hans',
-          label: this.$t('chinese')
+          iconGlyph: 'gear',
+          labelText: this.$t('setting') || '系统设置'
         }
       ]
     }
   },
   methods: {
+    navTo(tabName) {
+      if (tabName === 'mine') {
+        // 当前已经在我的页面
+        return;
+      } else if (tabName === 'home') {
+        uni.reLaunch({
+          url: '/pages/home/main'
+        });
+      } else if (tabName === 'collection' || tabName === 'history') {
+        uni.reLaunch({
+          url: '/pages/account/bookmark'
+        });
+      } else if (tabName === 'discover') {
+        uni.showToast({
+          title: '发现频道建设中...',
+          icon: 'none'
+        });
+      }
+    },
+    safeNavigateTo(targetUrl, fallbackUrl = '/pages/account/signin') {
+      const aliveRouteSet = new Set([
+        '/pages/home/main',
+        '/pages/viewer/native/clips',
+        '/pages/viewer/native/collection',
+        '/pages/viewer/web/clips',
+        '/pages/viewer/web/collection',
+        '/pages/account/bookmark',
+        '/pages/account/center',
+        '/pages/account/recharge',
+        '/pages/account/balance',
+        '/pages/account/signup',
+        '/pages/account/signin'
+      ])
+      const normalizedTarget = (targetUrl || '').split('?')[0]
+      const normalizedFallback = (fallbackUrl || '').split('?')[0]
+      const finalUrl = aliveRouteSet.has(normalizedTarget)
+        ? targetUrl
+        : aliveRouteSet.has(normalizedFallback)
+          ? fallbackUrl
+          : '/pages/account/signin'
+      uni.navigateTo({
+        url: finalUrl
+      })
+    },
     triggerMpIdentityPatch() {
-      // #ifndef MP-WEIXIN
-      // 非微信环境暂不启用头像昵称拉起弹层
-      // #endif
-
       // #ifdef MP-WEIXIN
       this.wechatPanelVisible = true
       // #endif
     },
     async submitWechatProfile(profilePacket) {
       this.wechatPanelVisible = false
+      const hasPhoneGrantPayload =
+        profilePacket &&
+        (profilePacket.phoneCode ||
+          (profilePacket.encryptedData && profilePacket.iv))
+      if (hasPhoneGrantPayload) {
+        const oauthState = await request.post('/oauth/miniapp/phoneLogin', {
+          platform: profilePacket.platform || 'weixin',
+          encryptedData: profilePacket.encryptedData || '',
+          iv: profilePacket.iv || '',
+          phoneCode: profilePacket.phoneCode || ''
+        })
+        if (oauthState && oauthState.token && oauthState.user) {
+          store.commit('token', oauthState.token)
+          store.commit('user', oauthState.user)
+          uni.setStorageSync('x-auth-sig', oauthState.token)
+          uni.setStorageSync('user', JSON.stringify(oauthState.user))
+        }
+        return
+      }
       const nextUserState = await request.post('/profile/updateUser', profilePacket)
       if (nextUserState) {
         store.commit('user', nextUserState)
@@ -207,51 +216,20 @@ export default {
         data: uidValue,
         success: () => {
           uni.showToast({
-            title: 'Copied to clipboard',
+            title: 'UID 已复制',
             icon: 'none'
           })
         }
       })
     },
-    goWalletVault() {
-      uni.navigateTo({
-        url: '/pages/account/balance'
-      })
-    },
-    goRechargeDock() {
-      uni.navigateTo({
-        url: '/pages/account/recharge'
-      })
-    },
     dispatchMenuNode(axisKey) {
-      if (axisKey === 'reward_portal') {
-        uni.navigateTo({
-          url: '/pages/rewards/rewards'
-        })
-        return
-      }
       if (axisKey === 'feedback_portal') {
-        uni.navigateTo({
-          url: '/pages/account/feedback'
-        })
-        return
-      }
-      if (axisKey === 'locale_portal') {
-        this.$refs.localeSheetPortal.open('bottom')
+        this.safeNavigateTo('/pages/account/feedback', '/pages/account/signin')
         return
       }
       if (axisKey === 'setting_portal') {
-        uni.navigateTo({
-          url: '/pages/account/setting'
-        })
+        this.safeNavigateTo('/pages/account/setting', '/pages/account/signin')
       }
-    },
-    applyLocaleOption(localeStamp) {
-      uni.setLocale(localeStamp)
-      this.$i18n.locale = localeStamp
-      setTimeout(() => {
-        this.$refs.localeSheetPortal.close()
-      }, 260)
     },
     routeSigninBridge() {
       // #ifndef MP-WEIXIN
@@ -299,176 +277,180 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.m5c-canvas-shell {
-  min-height: 100vh;
-  padding: 0 22rpx 30rpx;
-  background: radial-gradient(circle at top, #22354a 0%, #111b27 44%, #0a1119 100%);
-  box-sizing: border-box;
+/* ================= 通用与约束 ================= */
+.profile-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  /* #ifdef H5 */
+  height: calc(100vh - var(--window-top) - var(--window-bottom));
+  /* #endif */
+  background: #050505;
+  color: #ffffff;
+  position: relative;
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', 'STHeiti', 'Microsoft Yahei', 'Tahoma', 'Simsun', sans-serif;
 }
 
-.m5c-safe-gap {
-  height: var(--status-bar-height);
+.bg-glow {
+  position: absolute;
+  width: 600rpx;
+  height: 600rpx;
+  background: radial-gradient(circle, rgba(229, 181, 103, 0.15) 0%, rgba(5, 5, 5, 0) 70%);
+  top: -100rpx;
+  right: -150rpx;
+  z-index: 0;
+  pointer-events: none;
 }
 
-.m5c-page-headline {
+.safe-gap {
+  height: var(--status-bar-height, 0px);
+  width: 100%;
+  flex-shrink: 0;
+  z-index: 10;
+}
+
+.page-headline {
   text-align: center;
-  font-size: 36rpx;
+  font-size: 34rpx;
   font-weight: 700;
-  color: #eef4fc;
-  padding: 12rpx 0 16rpx;
+  color: #ffffff;
+  padding: 24rpx 0;
+  z-index: 10;
+  position: relative;
 }
 
-.m5c-profile-card {
-  border-radius: 28rpx;
-  padding: 24rpx 20rpx 20rpx;
-  background: linear-gradient(150deg, rgba(60, 96, 132, 0.45), rgba(15, 27, 39, 0.95));
-  border: 1rpx solid rgba(255, 255, 255, 0.12);
+.main-content {
+  flex: 1;
+  height: 0;
+  position: relative;
+  z-index: 5;
+}
+
+/* ================= 玻璃拟态基础类 ================= */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1rpx solid rgba(255, 255, 255, 0.08);
+}
+
+/* ================= 个人信息卡片 ================= */
+.profile-card {
+  margin: 20rpx 40rpx 40rpx;
+  border-radius: 32rpx;
+  padding: 50rpx 30rpx 40rpx;
   display: flex;
   flex-direction: column;
   align-items: center;
 }
 
-.m5c-avatar-ring {
-  width: 140rpx;
-  height: 140rpx;
-  border-radius: 999rpx;
-  padding: 5rpx;
-  background: linear-gradient(140deg, #90d0ff, #ff8f6b);
-}
-
-.m5c-avatar-core {
-  width: 130rpx;
-  height: 130rpx;
-  border-radius: 999rpx;
-}
-
-.m5c-name-text {
-  margin-top: 14rpx;
-  font-size: 34rpx;
-  color: #f2f7fe;
-  font-weight: 700;
-}
-
-.m5c-uid-text {
-  margin-top: 8rpx;
-  color: #a7bdd5;
-  font-size: 22rpx;
-}
-
-.m5c-signin-entry {
-  margin-top: 16rpx;
-  font-size: 23rpx;
-  color: #f8efe8;
-  padding: 10rpx 26rpx;
-  border-radius: 999rpx;
-  background: #f06a35;
-}
-
-.m5c-asset-grid {
-  margin-top: 18rpx;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14rpx;
-}
-
-.m5c-asset-tile {
-  border-radius: 20rpx;
-  padding: 16rpx;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1rpx solid rgba(255, 255, 255, 0.08);
-}
-
-.m5c-asset-tile--accent {
-  background: linear-gradient(145deg, rgba(235, 108, 58, 0.45), rgba(199, 78, 43, 0.35));
-}
-
-.m5c-asset-topline {
+.avatar-ring {
+  width: 172rpx;
+  height: 172rpx;
+  border-radius: 50%;
+  padding: 6rpx;
+  background: linear-gradient(135deg, #E5B567 0%, #c2964d 100%);
+  box-shadow: 0 8rpx 30rpx rgba(229, 181, 103, 0.25);
   display: flex;
   align-items: center;
+  justify-content: center;
 }
 
-.m5c-asset-label {
-  margin-left: 8rpx;
-  font-size: 24rpx;
-  color: #d7e5f5;
+.avatar-core {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background-color: #121214;
 }
 
-.m5c-asset-value {
-  margin-top: 10rpx;
-  display: block;
-  font-size: 32rpx;
-  color: #f4f8ff;
+.name-text {
+  margin-top: 24rpx;
+  font-size: 36rpx;
+  color: #ffffff;
   font-weight: 700;
+  letter-spacing: 1rpx;
 }
 
-.m5c-menu-matrix {
-  margin-top: 18rpx;
-  border-radius: 22rpx;
+.uid-text {
+  margin-top: 12rpx;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 24rpx;
+}
+
+.signin-btn {
+  margin-top: 30rpx;
+  font-size: 28rpx;
+  color: #050505;
+  font-weight: 600;
+  width: 240rpx;
+  height: 72rpx;
+  line-height: 72rpx;
+  border-radius: 999rpx;
+  background: linear-gradient(135deg, #E5B567 0%, #c2964d 100%);
+  border: none;
+  &::after { display: none; }
+  &:active { transform: scale(0.95); }
+  transition: transform 0.2s ease;
+}
+
+/* ================= 菜单列表区 ================= */
+.menu-matrix {
+  margin: 0 40rpx 40rpx;
+  border-radius: 28rpx;
   overflow: hidden;
-  border: 1rpx solid rgba(255, 255, 255, 0.08);
-  background: rgba(12, 20, 30, 0.82);
 }
 
-.m5c-menu-node {
+.menu-node {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 22rpx 18rpx;
-  border-bottom: 1rpx solid rgba(255, 255, 255, 0.06);
+  padding: 32rpx 30rpx;
+  border-bottom: 1rpx solid rgba(255, 255, 255, 0.05);
+  transition: background 0.2s ease;
+  &:active { background: rgba(255, 255, 255, 0.08); }
 }
 
-.m5c-menu-node:last-child {
+.menu-node:last-child {
   border-bottom: none;
 }
 
-.m5c-menu-main {
+.menu-main {
   display: flex;
   align-items: center;
+  gap: 20rpx;
 }
 
-.m5c-menu-caption {
-  margin-left: 12rpx;
-  color: #d8e5f4;
-  font-size: 27rpx;
-}
-
-.m5c-logout-wrap {
-  margin-top: 24rpx;
-}
-
-.m5c-logout-btn {
-  height: 84rpx;
-  line-height: 84rpx;
-  border-radius: 16rpx;
-}
-
-.m5c-locale-sheet {
-  border-top-left-radius: 24rpx;
-  border-top-right-radius: 24rpx;
-  padding: 20rpx 24rpx 28rpx;
-  background: #111a26;
-}
-
-.m5c-locale-title {
-  text-align: center;
-  display: block;
+.menu-caption {
+  color: rgba(255, 255, 255, 0.9);
   font-size: 30rpx;
-  color: #f0f6ff;
-  font-weight: 700;
 }
 
-.m5c-locale-row {
-  margin-top: 14rpx;
-  border-radius: 14rpx;
-  padding: 18rpx 16rpx;
+/* ================= 退出登录 ================= */
+.logout-wrap {
+  margin: 0 40rpx;
+}
+
+.logout-btn {
+  height: 96rpx;
+  border-radius: 24rpx;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  background: rgba(255, 255, 255, 0.05);
+  justify-content: center;
+  &::after { display: none; }
+  &:active { transform: scale(0.98); background: rgba(255, 255, 255, 0.1); }
+  transition: all 0.2s ease;
 }
 
-.m5c-locale-name {
-  color: #d2dfef;
-  font-size: 26rpx;
+.logout-text {
+  color: #ff4d4f; /* 柔和但醒目的红色 */
+  font-size: 30rpx;
+  font-weight: 600;
+  letter-spacing: 2rpx;
+}
+
+/* 底部防遮挡 (加高，让出底部自定义导航栏的位置) */
+.safe-bottom {
+  height: calc(180rpx + env(safe-area-inset-bottom));
 }
 </style>

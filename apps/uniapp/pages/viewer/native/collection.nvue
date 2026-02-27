@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <view class="nxp-shell">
     <!-- #ifdef APP -->
     <likeEffect
@@ -54,10 +54,11 @@
                   :controls="false"
                   :http-cache="true"
                   :show-loading="false"
-                  :show-fullscreen-btn="false"
+                  show-fullscreen-btn="true"
+                  direction="0"
                   :show-center-play-btn="false"
                   :style="viewportStyle"
-                  object-fit="cover"
+                  object-fit="contain"
                   @timeupdate="syncTimeline($event, slotIndex)"
                 ></video>
               </view>
@@ -94,12 +95,14 @@
                   </view>
 
                   <view v-if="actionTrayOpen" class="nxp-tray-row">
+                    <!--
                     <view class="nxp-tray-cell nxp-avatar-cell">
                       <avatar
                         :avatar="Array.isArray(clipUnit.cover) ? clipUnit.cover[0] : ''"
                         @click="handleProfileTap(slotIndex)"
                       />
                     </view>
+                    -->
                     <view class="nxp-tray-cell">
                       <like
                         :like="clipUnit.like"
@@ -108,6 +111,7 @@
                         @click="toggleThumb"
                       />
                     </view>
+                    <!--
                     <view class="nxp-tray-cell">
                       <comment
                         :total="clipUnit.comments"
@@ -115,6 +119,7 @@
                         @click="revealCommentSheet"
                       />
                     </view>
+                    -->
                     <view class="nxp-tray-cell" @click="openEpisodeSheet">
                       <view class="nxp-episode-chip">
                         <text class="nxp-episode-main">选集</text>
@@ -142,9 +147,11 @@
       ></progressbar>
     </view>
 
+    <!--
     <uni-popup ref="commentSheetRef">
       <comments @closeComment="hideCommentSheet"></comments>
     </uni-popup>
+    -->
 
     <uni-popup ref="episodeSheetRef">
       <episode
@@ -159,27 +166,21 @@
 </template>
 
 <script>
-import comments from '@/components/comment/index.vue'
 import streamHeader from '@/components/stream-header.vue'
 import episode from '@/components/episode.vue'
 import progressbar from '@/pages/viewer/native/progressbar.vue'
 import likeEffect from '@/components/likeEffect.vue'
 import like from '@/components/like.vue'
-import comment from '@/components/comment.vue'
 import share from '@/components/share.vue'
-import avatar from '@/components/avatar.vue'
 import request from '@/common/request'
 
 export default {
   components: {
-    comments,
     streamHeader,
     episode,
     progressbar,
     likeEffect,
-    avatar,
     like,
-    comment,
     share
   },
   data() {
@@ -225,7 +226,9 @@ export default {
   },
   computed: {
     viewportStyle() {
-      return `width: 750rpx; height: ${this.viewportH - this.tabDockH}px;`
+      return `width: ${this.viewportW}px; height: ${
+        this.viewportH - this.tabDockH
+      }px;`
     },
     isStreamPrimed() {
       return this.reelDeck.length > 0 && this.activeSlot >= 0
@@ -257,9 +260,9 @@ export default {
 
     const compactIosModels = ['iPhone6', 'iPhone6s', 'iPhone7', 'iPhone8']
     if (this.devicePlatform === 'ios' && !compactIosModels.includes(sys.model)) {
-      this.tabDockH = 32
+      this.tabDockH = 82
     } else {
-      this.tabDockH = 0
+      this.tabDockH = 50
     }
 
     await this.hydrateFeed(option)
@@ -509,14 +512,20 @@ export default {
 .nxp-stage-wrap {
   position: relative;
   background-color: #000000;
+  width: 100%;
+  height: 100%;
 }
 
 .nxp-frame-root {
   position: relative;
+  width: 100%;
+  height: 100%;
 }
 
 .nxp-video-wrap {
   position: relative;
+  width: 100%;
+  height: 100%;
 }
 
 .nxp-touch-surface {

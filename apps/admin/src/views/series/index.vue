@@ -36,20 +36,34 @@ const context: any = {
 			title: "短剧名称",
 			type: "text",
 			column: {
-				width: 300,
+				width: 200,
 				fixed: "left",
+				sorter: true,
+				resizable: true,
 			},
 			search: { show: true },
+			form: {
+				rules: [
+					{ required: true, message: "请输入短剧名称" }
+				]
+			}
 		},
 
 		cover: {
 			title: "封面",
 			type: "image-uploader",
+			column: {
+				width: 100,
+				resizable: true,
+			},
 			valueBuilder(context: any) {
 				const { value, row, key } = context;
 				row[key] = buildUploadFileList(value);
 			},
 			form: {
+				rules: [
+					{ required: true, message: "请上传封面图片" }
+				],
 				component: {
 					max: 1,
 				},
@@ -60,7 +74,14 @@ const context: any = {
 			type: "dict-select",
 			search: { show: true },
 			column: {
-				width: 200,
+				width: 120,
+				sorter: true,
+				resizable: true,
+			},
+			form: {
+				rules: [
+					{ required: true, message: "请选择所属分类" }
+				]
 			},
 			dict: dict({
 				url: `${apiPrefix}/dict`,
@@ -69,6 +90,11 @@ const context: any = {
 		season: {
 			title: "第几季",
 			type: "number",
+			column: {
+				width: 100,
+				sorter: true,
+				resizable: true,
+			},
 			form: {
 				value: 1,
 			},
@@ -76,9 +102,50 @@ const context: any = {
 				min: 0,
 			},
 		},
+		isCompleted: {
+			title: "更新状态",
+			type: "dict-switch",
+			column: {
+				width: 120,
+				sorter: true,
+				resizable: true,
+			},
+			form: {
+				value: false,
+			},
+			dict: dict({
+				data: [
+					{ value: true, label: "已完结", color: "success" },
+					{ value: false, label: "更新中", color: "primary" },
+				],
+			}),
+		},
+		showInBanner: {
+			title: "推荐首页轮播图",
+			type: "dict-switch",
+			column: {
+				width: 150,
+				sorter: true,
+				resizable: true,
+			},
+			form: {
+				value: false,
+			},
+			dict: dict({
+				data: [
+					{ value: true, label: "展示", color: "success" },
+					{ value: false, label: "不展示", color: "warning" },
+				],
+			}),
+		},
 		recommend: {
 			title: "推荐首页",
 			type: "dict-switch",
+			column: {
+				width: 120,
+				sorter: true,
+				resizable: true,
+			},
 			form: {
 				value: false,
 			},
@@ -92,6 +159,11 @@ const context: any = {
 		pass: {
 			title: "状态",
 			type: "dict-switch",
+			column: {
+				width: 100,
+				sorter: true,
+				resizable: true,
+			},
 			form: {
 				value: true,
 			},

@@ -31,14 +31,25 @@ const context: any = {
 			title: "分类名称",
 			type: "text",
 			search: { show: true },
+			column: {
+				width: 150,
+				sorter: true,
+				resizable: true,
+			},
+			form: {
+				rules: [
+					{ required: true, message: "请输入分类名称" }
+				]
+			}
 		},
 		order: {
 			title: "排序",
 			type: "number",
-			// column: {
-			// 	sorter: "custom",
-			// 	defaultSortOrder: "descend",
-			// },
+			column: {
+				width: 100,
+				sorter: true,
+				resizable: true,
+			},
 			form: {
 				value: 1,
 				component: {
@@ -50,6 +61,11 @@ const context: any = {
 		pass: {
 			title: "状态",
 			type: "dict-switch",
+			column: {
+				width: 100,
+				sorter: true,
+				resizable: true,
+			},
 			form: {
 				value: false,
 			},

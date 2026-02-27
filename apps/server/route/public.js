@@ -290,44 +290,76 @@ export default {
       fail(ctx, 'Server error')
     }
   },
-  // 棣栭〉鎺ㄨ崘鍐呭
+  
   async home(ctx) {
-    const recommend = await mongo
+    // 辅助函数：为短剧列表添加集数统计
+    const enrichSeriesWithEpisodeCount = async (seriesList) => {
+      const enriched = []
+      for (const series of seriesList) {
+        const episodeCount = await mongo.col('episode').countDocuments({
+          series: series._id.toString(),
+          pass: true
+        })
+        enriched.push({
+          ...series,
+          episodeCount: episodeCount || 0
+        })
+      }
+      return enriched
+    }
+
+    // 获取轮播图推荐的短剧（showInBanner为true且pass为true）
+    const bannerRaw = await mongo
       .col('series')
-      .find()
-      // .find({
-      //   recommend: {
-      //     $gt: 0
-      //   }
-      // })
-      // .sort({ recommend: -1 })
+      .find({
+        showInBanner: true,
+        pass: true
+      })
+      .sort({ updatedAt: -1 })
+      .limit(5)
+      .toArray()
+    const banner = await enrichSeriesWithEpisodeCount(bannerRaw)
+
+    // 如果没有设置轮播图，则使用推荐的短剧
+    const recommendRaw = banner.length > 0 ? bannerRaw : await mongo
+      .col('series')
+      .find({
+        pass: true
+      })
+      .sort({ updatedAt: -1 })
       .limit(10)
       .toArray()
+    const recommend = await enrichSeriesWithEpisodeCount(recommendRaw)
 
     const category = await mongo
       .col('category')
       .find({
         pass: true
       })
+      .sort({ order: 1 })
       .toArray()
     const categorys = []
     for (const cat of category) {
-      const series = await mongo
+      const seriesRaw = await mongo
         .col('series')
         .find({
-          category: cat._id.toString()
+          category: cat._id.toString(),
+          pass: true
         })
+        .sort({ updatedAt: -1 })
         .limit(10)
         .toArray()
-      if (series.length > 0) {
+      if (seriesRaw.length > 0) {
+        const seriesWithCount = await enrichSeriesWithEpisodeCount(seriesRaw)
         categorys.push({
+          _id: cat._id,
           name: cat.name,
-          series
+          series: seriesWithCount
         })
       }
     }
 
-    const release = await mongo
+    const releaseRaw = await mongo
       .col('series')
       .find({
         pass: true
@@ -335,7 +367,9 @@ export default {
       .sort({ createdAt: -1 })
       .limit(10)
       .toArray()
-    const data = { recommend, categorys, release }
+    const release = await enrichSeriesWithEpisodeCount(releaseRaw)
+    
+    const data = { recommend, categorys, release, banner }
     success(ctx, data)
   },
 
@@ -408,6 +442,39 @@ export default {
         episodes.map((episode) => normalizeEpisodeMedia(episode))
       )
     } catch (error) {
+      fail(ctx, 'Server error')
+    }
+  },
+  
+  // 搜索短剧
+  async search(ctx) {
+    try {
+      const { keyword } = ctx.request.body
+      
+      if (!keyword || keyword.trim() === '') {
+        success(ctx, [])
+        return
+      }
+
+      const searchRegex = new RegExp(keyword.trim(), 'i')
+      
+      const results = await mongo
+        .col('series')
+        .find({
+          $or: [
+            { name: searchRegex },
+            { title: searchRegex },
+            { description: searchRegex },
+            { msg: searchRegex }
+          ],
+          pass: true
+        })
+        .limit(20)
+        .toArray()
+
+      success(ctx, results)
+    } catch (error) {
+      console.log('Search error:', error)
       fail(ctx, 'Server error')
     }
   }

@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <view class="nxp-shell">
     <swiper
       class="nxp-swiper"
@@ -22,11 +22,12 @@
               :controls="false"
               :http-cache="true"
               :page-gesture="false"
-              :show-fullscreen-btn="false"
+              show-fullscreen-btn="true"
+              direction="0"
               :show-loading="true"
               :show-center-play-btn="false"
               :enable-progress-gesture="false"
-              object-fit="cover"
+              object-fit="contain"
               :src="resolveStreamUrl(clipUnit)"
               @ended="handleClipEnded"
               @click="handleStageTap(clipUnit.state)"
@@ -62,12 +63,14 @@
               </view>
 
               <view v-if="actionTrayOpen" class="nxp-tray-row">
+                <!--
                 <view class="nxp-tray-cell nxp-avatar-cell">
                   <avatar
                     :avatar="Array.isArray(clipUnit.cover) ? clipUnit.cover[0] : ''"
                     @click="handleProfileTap(slotIndex)"
                   />
                 </view>
+                -->
                 <view class="nxp-tray-cell">
                   <like
                     :isLike="clipUnit.isLike"
@@ -76,6 +79,7 @@
                     @click="toggleThumb"
                   />
                 </view>
+                <!--
                 <view class="nxp-tray-cell">
                   <comment
                     :total="clipUnit.comments"
@@ -83,6 +87,7 @@
                     @click="revealCommentSheet"
                   />
                 </view>
+                -->
                 <view class="nxp-tray-cell">
                   <share @click="handleSharePress" />
                 </view>
@@ -100,19 +105,18 @@
       </swiper-item>
     </swiper>
 
+    <!--
     <uni-popup ref="commentSheetRef">
       <comments @closeComment="hideCommentSheet"></comments>
     </uni-popup>
+    -->
   </view>
 </template>
 
 <script>
-import comments from '@/components/comment/index.vue'
 import swipeProgress from '@/components/swipe-progress.vue'
 import like from '@/components/like.vue'
-import comment from '@/components/comment.vue'
 import share from '@/components/share.vue'
-import avatar from '@/components/avatar.vue'
 import request from '@/common/request'
 
 // #ifdef WEB
@@ -122,11 +126,8 @@ audioContext.loop = true
 
 export default {
   components: {
-    comments,
     swipeProgress,
-    avatar,
     like,
-    comment,
     share
   },
   data() {
@@ -363,14 +364,20 @@ export default {
 
 .nxp-swiper {
   position: relative;
+  width: 100%;
+  height: 100%;
 }
 
 .nxp-frame-root {
   position: relative;
+  width: 100%;
+  height: 100%;
 }
 
 .nxp-video-wrap {
   position: relative;
+  width: 100%;
+  height: 100%;
 }
 
 .nxp-touch-surface {

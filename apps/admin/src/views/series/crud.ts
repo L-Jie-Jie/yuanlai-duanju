@@ -53,7 +53,15 @@ export default function createCrudOptions({ context }: CreateCrudOptionsProps): 
         editRequest,
         delRequest
       },
+      table: {
+        scroll: { x: 1500 }, // 启用横向滚动
+        bordered: true,
+        striped: true,
+        size: 'small'
+      },
       rowHandle: {
+        fixed: 'right',
+        width: 200,
         buttons: {
           more: {
             text: null,

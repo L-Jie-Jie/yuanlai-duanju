@@ -1,26 +1,55 @@
 <template>
   <view class="bg">
     <view class="container">
-      <!-- 标题 -->
       <view class="headline">
-        <text>元来短剧 申请</text>
-        <text>获取你的昵称、头像</text>
+        <text>元来短剧</text>
+        <text>授权手机号以完成快捷登录</text>
       </view>
 
-      <!-- 选择头像 -->
+      <view class="tips-row">
+        <text>
+          仅用于账号登录与安全校验，我们会严格保护你的隐私信息。
+        </text>
+      </view>
+
+      <view class="login-row">
+        <!-- #ifdef MP-WEIXIN -->
+        <button
+          class="quick-login wechat"
+          open-type="getPhoneNumber"
+          @getphonenumber="onWechatGetPhone"
+        >
+          微信一键登录
+        </button>
+        <!-- #endif -->
+
+        <!-- #ifdef MP-TOUTIAO -->
+        <button
+          class="quick-login toutiao"
+          open-type="getPhoneNumber"
+          @getphonenumber="onDouyinGetPhone"
+        >
+          抖音一键登录
+        </button>
+        <!-- #endif -->
+
+        <button class="default" @click="$emit('close')">
+          暂不登录
+        </button>
+      </view>
+
+      <!--
+      旧版头像昵称授权（MVP隐藏）
       <view class="choose-avatar-row">
         <text>头像</text>
         <button
           class="avatar-wrapper"
           open-type="chooseAvatar"
           @chooseavatar="onChooseAvatar"
-        >
-          <image class="avatar" :src="avatar"></image>
-        </button>
+        />
         <text>点击选择头像</text>
       </view>
 
-      <!-- 选择昵称 -->
       <view class="choose-nickname-row">
         <text>昵称</text>
         <input
@@ -30,24 +59,12 @@
           :cursor-spacing="120"
         />
       </view>
-
-      <!-- 按钮 -->
-      <view class="login-row">
-        <button
-          @click="submit"
-          :class="{ inactive: disabled }"
-          :disabled="disabled"
-        >
-          登录
-        </button>
-        <button class="default" @click="$emit('close')">关闭</button>
-      </view>
+      -->
     </view>
   </view>
 </template>
 
 <script>
-// 微信小程序登陆组件
 import request from '@/common/request'
 
 export default {
@@ -68,6 +85,27 @@ export default {
     }
   },
   methods: {
+    emitPhoneSubmitPayload(platform, detail = {}) {
+      if (detail.errMsg && detail.errMsg.indexOf('ok') === -1) {
+        uni.showToast({
+          title: '用户未授权手机号',
+          icon: 'none'
+        })
+        return
+      }
+      this.$emit('submit', {
+        platform,
+        encryptedData: detail.encryptedData || '',
+        iv: detail.iv || '',
+        phoneCode: detail.code || ''
+      })
+    },
+    onWechatGetPhone(e) {
+      this.emitPhoneSubmitPayload('weixin', e && e.detail)
+    },
+    onDouyinGetPhone(e) {
+      this.emitPhoneSubmitPayload('toutiao', e && e.detail)
+    },
     async onChooseAvatar(e) {
       try {
         const { avatarUrl } = e.detail
@@ -106,7 +144,7 @@ view {
 .container {
   color: #282828;
   width: 96vw;
-  height: 45%;
+  min-height: 36%;
   position: absolute;
   left: 0;
   bottom: 0;
@@ -120,7 +158,7 @@ view {
   margin: 0 2vw;
   .headline {
     width: 100%;
-    height: 30%;
+    min-height: 28%;
     font-size: 14px;
     font-weight: bold;
     padding-top: 20px;
@@ -131,6 +169,13 @@ view {
       font-weight: bold;
       margin-top: 5px;
     }
+  }
+
+  .tips-row {
+    padding: 10px 2px 16px;
+    font-size: 13px;
+    color: #666;
+    border-bottom: 1px solid #eee;
   }
 
   .choose-avatar-row,
@@ -170,13 +215,13 @@ view {
   }
   .login-row {
     width: 100%;
-    height: 30%;
     padding-top: 20px;
     display: flex;
+    flex-direction: column;
 
     button {
       font-size: 14px;
-      width: 30%;
+      width: 100%;
       height: 40px;
       display: flex;
       align-items: center;
@@ -184,6 +229,17 @@ view {
       border-color: transparent;
       color: #fff;
       background-color: #1aad19;
+      margin-top: 10px;
+      border-radius: 8px;
+    }
+    .quick-login {
+      margin-top: 0;
+    }
+    .wechat {
+      background-color: #07c160;
+    }
+    .toutiao {
+      background-color: #161823;
     }
     .default {
       color: #000000;

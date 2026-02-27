@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <view class="nxp-shell">
     <swiper
       class="nxp-swiper"
@@ -22,11 +22,12 @@
               :controls="false"
               :http-cache="true"
               :page-gesture="false"
-              :show-fullscreen-btn="false"
+              show-fullscreen-btn="true"
+              direction="0"
               :show-loading="true"
               :show-center-play-btn="false"
               :enable-progress-gesture="false"
-              object-fit="cover"
+              object-fit="contain"
               :src="resolveStreamUrl(clipUnit)"
               @ended="handleClipEnded"
               @click="handleStageTap(clipUnit.state)"
@@ -67,12 +68,14 @@
               </view>
 
               <view v-if="actionTrayOpen" class="nxp-tray-row">
+                <!--
                 <view class="nxp-tray-cell nxp-avatar-cell">
                   <avatar
                     :avatar="Array.isArray(clipUnit.cover) ? clipUnit.cover[0] : ''"
                     @click="handleProfileTap(slotIndex)"
                   />
                 </view>
+                -->
                 <view class="nxp-tray-cell">
                   <like
                     :isLike="clipUnit.isLike"
@@ -81,6 +84,7 @@
                     @click="toggleThumb"
                   />
                 </view>
+                <!--
                 <view class="nxp-tray-cell">
                   <comment
                     :total="clipUnit.comments"
@@ -88,6 +92,7 @@
                     @click="revealCommentSheet"
                   />
                 </view>
+                -->
                 <view class="nxp-tray-cell" @click="openEpisodeSheet">
                   <view class="nxp-episode-chip">
                     <text class="nxp-episode-main">选集</text>
@@ -113,9 +118,11 @@
       </swiper-item>
     </swiper>
 
+    <!--
     <uni-popup ref="commentSheetRef">
       <comments @closeComment="hideCommentSheet"></comments>
     </uni-popup>
+    -->
 
     <uni-popup ref="episodeSheetRef">
       <episode
@@ -129,14 +136,11 @@
 </template>
 
 <script>
-import comments from '@/components/comment/index.vue'
 import streamHeader from '@/components/stream-header.vue'
 import episode from '@/components/episode.vue'
 import swipeProgress from '@/components/swipe-progress.vue'
 import like from '@/components/like.vue'
-import comment from '@/components/comment.vue'
 import share from '@/components/share.vue'
-import avatar from '@/components/avatar.vue'
 import request from '@/common/request'
 
 // #ifdef WEB
@@ -147,12 +151,9 @@ audioContext.loop = true
 export default {
   components: {
     streamHeader,
-    comments,
     episode,
     swipeProgress,
-    avatar,
     like,
-    comment,
     share
   },
   data() {
@@ -220,14 +221,28 @@ export default {
   },
   methods: {
     resolveStreamUrl(clipUnit) {
-      if (!clipUnit) return ''
-      if (Array.isArray(clipUnit.video)) {
-        return clipUnit.video[0] || ''
+      if (!clipUnit) {
+        console.log('resolveStreamUrl: clipUnit is null')
+        return ''
       }
-      if (typeof clipUnit.video === 'string') {
-        return clipUnit.video
+      
+      let videoUrl = ''
+      if (Array.isArray(clipUnit.video) && clipUnit.video.length > 0) {
+        videoUrl = clipUnit.video[0]
+      } else if (typeof clipUnit.video === 'string') {
+        videoUrl = clipUnit.video
       }
-      return ''
+      
+      console.log('resolveStreamUrl:', {
+        episode: clipUnit.episode,
+        title: clipUnit.title,
+        videoUrl: videoUrl,
+        videoType: typeof clipUnit.video,
+        videoIsArray: Array.isArray(clipUnit.video),
+        videoLength: Array.isArray(clipUnit.video) ? clipUnit.video.length : 'N/A'
+      })
+      
+      return videoUrl || ''
     },
     buildClipDomId(clipUnit, slotIndex) {
       if (clipUnit && clipUnit._id) {
@@ -338,6 +353,19 @@ export default {
     async hydrateFeed(option) {
       const rawPayload = await request.post('/public/series', option)
       this.reelDeck = Array.isArray(rawPayload) ? rawPayload : []
+      
+      console.log('hydrateFeed loaded episodes:', this.reelDeck.length)
+      if (this.reelDeck.length > 0) {
+        console.log('First episode sample:', {
+          _id: this.reelDeck[0]._id,
+          title: this.reelDeck[0].title,
+          episode: this.reelDeck[0].episode,
+          hasVideo: !!this.reelDeck[0].video,
+          videoType: typeof this.reelDeck[0].video,
+          videoIsArray: Array.isArray(this.reelDeck[0].video),
+          videoValue: this.reelDeck[0].video
+        })
+      }
 
       let presetSlot = 0
       if (option && option.ep) {
@@ -409,14 +437,20 @@ export default {
 
 .nxp-swiper {
   position: relative;
+  width: 100%;
+  height: 100%;
 }
 
 .nxp-frame-root {
   position: relative;
+  width: 100%;
+  height: 100%;
 }
 
 .nxp-video-wrap {
   position: relative;
+  width: 100%;
+  height: 100%;
 }
 
 .nxp-touch-surface {

@@ -8,6 +8,22 @@
                 }
             }
         },
+        {
+            "path": "pages/follow/index",
+            "style": {
+                "app-plus": {
+                    "titleNView": false
+                }
+            }
+        },
+        {
+            "path": "pages/history/index",
+            "style": {
+                "app-plus": {
+                    "titleNView": false
+                }
+            }
+        },
         // #ifdef APP
         {
             "path": "pages/viewer/native/clips",
@@ -98,52 +114,39 @@
         }
     ],
     "tabBar": {
-        "color": "#7F8FA0",
-        "selectedColor": "#14B87A",
-        "backgroundColor": "#0F151C",
-        "iconWidth": "20px",
+        "custom": true,
+        "color": "rgba(255, 255, 255, 0.4)",
+        "selectedColor": "#E5B567",
+        "backgroundColor": "rgba(18, 18, 20, 0.85)",
+        "borderStyle": "black",
         "list": [
             {
                 "pagePath": "pages/home/main",
-                "text": "%discover%",
-                "iconPath": "static/tabbar/a2.png",
-                "selectedIconPath": "static/tabbar/a.png"
+                "text": "首页"
             },
-            // #ifdef APP
             {
-                "pagePath": "pages/viewer/native/clips",
-                "text": "%shorts%",
-                "iconPath": "static/tabbar/b2.png",
-                "selectedIconPath": "static/tabbar/b.png"
+                "pagePath": "pages/follow/index",
+                "text": "追剧"
             },
-            // #endif
-            // #ifdef WEB || MP-WEIXIN
             {
                 "pagePath": "pages/viewer/web/clips",
-                "text": "%shorts%",
-                "iconPath": "static/tabbar/b2.png",
-                "selectedIconPath": "static/tabbar/b.png"
+                "text": "剧场"
             },
-            // #endif
             {
-                "pagePath": "pages/account/bookmark",
-                "text": "%favorite%",
-                "iconPath": "static/tabbar/c2.png",
-                "selectedIconPath": "static/tabbar/c.png"
+                "pagePath": "pages/history/index",
+                "text": "历史"
             },
             {
                 "pagePath": "pages/account/center",
-                "text": "%profile%",
-                "iconPath": "static/tabbar/d2.png",
-                "selectedIconPath": "static/tabbar/d.png"
+                "text": "我的"
             }
         ]
     },
     "globalStyle": {
         "navigationBarTextStyle": "white",
         "navigationBarTitleText": "%app.name%",
-        "navigationBarBackgroundColor": "#0F151C",
-        "backgroundColor": "#0F151C",
+        "navigationBarBackgroundColor": "#050505",
+        "backgroundColor": "#050505",
         "navigationStyle": "custom"
     }
 }

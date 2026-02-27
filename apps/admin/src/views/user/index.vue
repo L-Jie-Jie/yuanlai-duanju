@@ -17,11 +17,15 @@ const context: any = {
 			type: "text",
 			search: { show: true },
 			column: {
-				component: {
-					sortOrder: false,
-					sorter: "default",
-				},
+				width: 150,
+				sorter: true,
+				resizable: true,
 			},
+			form: {
+				rules: [
+					{ required: true, message: "请输入用户名" }
+				]
+			}
 		},
 		password: {
 			title: "密码",
@@ -29,21 +33,32 @@ const context: any = {
 			column: {
 				show: false,
 			},
+			form: {
+				rules: [
+					{ required: true, message: "请输入密码" }
+				]
+			}
 		},
 		avatar: {
 			title: "头像",
 			type: "cropper-uploader",
+			column: {
+				width: 100,
+				resizable: true,
+			},
 		},
 		pass: {
 			title: "状态",
 			search: { show: true },
 			type: "dict-switch",
+			column: {
+				width: 100,
+				sorter: true,
+				resizable: true,
+			},
 			form: {
 				value: true,
 			},
-			// dict: dict({
-			//   url: `${apiPrefix}/dict`
-			// })
 			dict: dict({
 				data: [
 					{ value: true, label: "正常", color: "success" },

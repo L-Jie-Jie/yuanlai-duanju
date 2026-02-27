@@ -1,10 +1,17 @@
 import store from '@/store/index.js'
 
 const AUTH_SIG_STORAGE_KEY = 'x-auth-sig'
+const PROD_API_ROOT = 'https://api.fastshort.top/api'
+const LOCAL_DEV_API_ROOT = 'http://127.0.0.1:3000/api'
+const H5_DEV_PROXY_API_ROOT = '/api'
+const customDevApiRoot = uni.getStorageSync('dev-api-root')
+const isH5Runtime = process.env.VUE_APP_PLATFORM === 'h5'
+
+// 临时修改：H5 开发环境也直接使用 localhost:3000
 const API_ROOT =
   process.env.NODE_ENV === 'production'
-    ? 'https://api.fastshort.top/api'
-    : 'http://127.0.0.1:3000/api'
+    ? PROD_API_ROOT
+    : customDevApiRoot || LOCAL_DEV_API_ROOT
 
 export const BASE_URL = API_ROOT
 export const SESSION_SIG_KEY = AUTH_SIG_STORAGE_KEY

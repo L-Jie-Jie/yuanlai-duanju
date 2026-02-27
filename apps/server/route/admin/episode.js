@@ -100,10 +100,6 @@ export default {
         return
       }
 
-      if (document.video) {
-        document.cover = [document.video + '.png']
-      }
-
       const series = await mongo.col('series').findOne({ _id: new ObjectId(document.series) })
       if (series) {
         document.seriesname = series.name
@@ -159,10 +155,6 @@ export default {
         return
       }
 
-      if (document.video) {
-        document.cover = [document.video + '.png']
-      }
-
       const series = await mongo.col('series').findOne({ _id: new ObjectId(document.series) })
       if (series) {
         document.seriesname = series.name
@@ -200,11 +192,17 @@ export default {
   async delete(ctx) {
     try {
       const { id } = ctx.params
+      
+      // 注意：这里只删除数据库记录，不删除S3文件
+      // S3文件应该通过专门的清理脚本定期清理孤立文件
+      // 这样可以防止误删除仍在使用的文件
       const ret = await mongo.col('episode').deleteOne({ _id: new ObjectId(id) })
       if (ret.deletedCount === 0) {
         fail(ctx, '删除失败')
         return
       }
+      
+      console.log(`已删除分集记录 ${id}，S3文件保留（可通过清理脚本删除孤立文件）`)
       success(ctx, {})
     } catch (error) {
       fail(ctx, 'Server error')
@@ -216,11 +214,17 @@ export default {
 
     try {
       ids = ids.map((value) => new ObjectId(value))
+      
+      // 注意：这里只删除数据库记录，不删除S3文件
+      // S3文件应该通过专门的清理脚本定期清理孤立文件
+      // 这样可以防止误删除仍在使用的文件
       const ret = await mongo.col('episode').deleteMany({ _id: { $in: ids } })
       if (ret.deletedCount === 0) {
         fail(ctx, '删除失败')
         return
       }
+      
+      console.log(`已删除 ${ret.deletedCount} 个分集记录，S3文件保留（可通过清理脚本删除孤立文件）`)
       success(ctx, {})
     } catch (error) {
       fail(ctx, 'Server error')

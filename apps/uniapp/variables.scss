@@ -1,21 +1,21 @@
-/* Shared theme tokens */
-$theme-brand-50: #e7fff5;
-$theme-brand-100: #c8f7e4;
-$theme-brand-300: #5fd6a8;
-$theme-brand-500: #14b87a;
-$theme-brand-700: #0f875c;
+/* Shared theme tokens - 简约大气黑金风格 */
+$theme-brand-50: #fef9ed;
+$theme-brand-100: #fdf3d7;
+$theme-brand-300: #f0d89a;
+$theme-brand-500: #E5B567;
+$theme-brand-700: #D4A352;
 
 $theme-success: #2ccf8f;
 $theme-warning: #ffb648;
 $theme-danger: #f25f6b;
 
-$theme-surface-0: #0f151c;
-$theme-surface-1: #18212c;
-$theme-surface-2: #243141;
+$theme-surface-0: #050505;
+$theme-surface-1: #121214;
+$theme-surface-2: #18181B;
 
-$theme-text-primary: #f4f8fb;
-$theme-text-secondary: #b9c7d6;
-$theme-text-muted: #7f8fa0;
+$theme-text-primary: #ffffff;
+$theme-text-secondary: rgba(255, 255, 255, 0.9);
+$theme-text-muted: rgba(255, 255, 255, 0.5);
 
 $space-2xs: 6px;
 $space-xs: 10px;
