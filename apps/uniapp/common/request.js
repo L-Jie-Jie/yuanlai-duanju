@@ -1,7 +1,7 @@
 import store from '@/store/index.js'
 
 const AUTH_SIG_STORAGE_KEY = 'x-auth-sig'
-const PROD_API_ROOT = 'https://api.fastshort.top/api'
+const PROD_API_ROOT = 'https://服务器地址/api'
 const LOCAL_DEV_API_ROOT = 'http://127.0.0.1:3000/api'
 const H5_DEV_PROXY_API_ROOT = '/api'
 const customDevApiRoot = uni.getStorageSync('dev-api-root')
