@@ -12,7 +12,7 @@ const serviceEnv: ServiceEnv = {
     url: 'http://localhost:8080'
   },
   prod: {
-    url: 'http://123.57.107.35:3000/api/admin'
+    url: '/api/admin'
   }
 };
 
