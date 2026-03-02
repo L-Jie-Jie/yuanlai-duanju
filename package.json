@@ -9,5 +9,11 @@
   },
   "keywords": [],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "pnpm": {
+    "overrides": {
+      "@antfu/install-pkg": "0.4.1",
+      "package-manager-detector": "0.2.0"
+    }
+  }
 }
