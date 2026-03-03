@@ -150,7 +150,7 @@ export default {
       version: process.env.npm_package_version
     })
   },
-  // 涓婁紶鏂囦欢锛屽ご鍍忥紝瑙嗛锛岀瓑绛?
+  // 上传文件：头像、视频等
   async upload(ctx) {
     try {
       const start = new Date().getTime()
@@ -158,27 +158,30 @@ export default {
       const { filepath, mimetype } = ctx.request.files.file
       const fileExtension = mime.extension(mimetype)
       if (!exts.includes(fileExtension)) {
-        fail(ctx, '鏂囦欢绫诲瀷閿欒')
+        fail(ctx, '文件类型错误')
         return
       }
       console.log(filepath, fileExtension)
-      // 璁＄畻鏂囦欢鐨刴d5
+      // 计算文件的 md5
       const buff = fs.readFileSync(filepath)
       const hash = createHash('md5').update(buff).digest('hex')
 
       let url = ''
 
       if (fileExtension == 'mp4') {
-        const screenshotDir = path.join(process.cwd(), 'screenshots')
-        fs.mkdirSync(screenshotDir, { recursive: true })
-        // 瑙嗛鍜屾埅鍥句笂浼?
+        // 视频上传（已禁用自动生成封面功能，避免 ffmpeg 依赖）
         const filename = `video/${dayjs().format(
           'YYYYMMDD'
         )}/${hash}.${fileExtension}`
-        void createAndUploadVideoCover(filepath, screenshotDir, hash, filename)
+        
+        // 注释掉自动生成封面功能，避免 ffmpeg 依赖问题
+        // const screenshotDir = path.join(process.cwd(), 'screenshots')
+        // fs.mkdirSync(screenshotDir, { recursive: true })
+        // void createAndUploadVideoCover(filepath, screenshotDir, hash, filename)
+        
         url = await uploadS3(filepath, filename)
       } else {
-        // 澶村儚鎴栬€呭浘鐗囦笂浼?
+        // 头像或者图片上传
         const filename = `avatar/${dayjs().format(
           'YYYYMMDD'
         )}/${hash}.${fileExtension}`
@@ -193,7 +196,7 @@ export default {
       fail(ctx, error.message)
     }
   },
-  // 娉ㄥ唽鍖垮悕鐢ㄦ埛
+  // 注册匿名用户
   async anonymous(ctx) {
     try {
       const username = 'Visitor' + util.randomString(4, 3)
@@ -223,7 +226,7 @@ export default {
       fail(ctx, 'Server error')
     }
   },
-  // 鐢ㄦ埛娉ㄥ唽
+  // 用户注册
   async register(ctx) {
     try {
       const { username, password, repassword, mobile, _id } = ctx.request.body
@@ -267,11 +270,10 @@ export default {
     }
   },
 
-  // 鐢ㄦ埛鐧诲綍
+  // 用户登录
   async login(ctx) {
     try {
       const { username, password } = ctx.request.body
-      // console.log('/login', username, password)
       
       // 支持用户名或手机号登录
       const res = await mongo.col('user').findOne({ 
@@ -380,15 +382,13 @@ export default {
     success(ctx, data)
   },
 
-  // 闅忔満鐭棰?
+  // 随机短视频
   async short(ctx) {
     const episodes = await mongo
       .col('episode')
       .aggregate([
         {
           $match: {
-            // series: '656f41e0830eeb0eb93471b5'  // Oppenheimer
-            // series: '6571a29ba21c5f2d89cf2d99',
             'video.0': { $exists: true },
             'cover.0': { $exists: true }
           }
@@ -412,8 +412,6 @@ export default {
             isLike: { $toBool: { $size: '$likeList' } }
           }
         },
-        // { $addFields: { video: { $first: '$video' } } },
-        // { $addFields: { cover: { $first: '$cover' } } },
         {
           $project: {
             likeList: 0
@@ -431,7 +429,7 @@ export default {
       fail(ctx, 'Server error')
     }
   },
-  // 鑾峰彇鏌愪竴涓墽闆嗙殑鎵€鏈変俊鎭?
+  // 获取某一个剧集的所有信息
   async series(ctx) {
     const { id } = ctx.request.body
 
