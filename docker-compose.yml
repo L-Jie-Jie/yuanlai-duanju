@@ -1,0 +1,70 @@
+version: '3.7'
+
+services:
+  mongodb:
+    image: mongo:latest
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - ./data/mongo:/data/db
+
+  redis:
+    image: redis:latest
+    restart: always
+    ports:
+      - "6379:6379"
+
+  minio:
+    image: minio/minio
+    restart: always
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    command: server /data --console-address ":9001"
+
+  # 下面的服务如果你想在本地通过 npm run dev 跑，其实可以注释掉 server 服务，以免端口冲突
+  # 但如果你想保留也可以，只要确保本地 npm run dev 用的是不同端口，或者你关掉 docker 里的 server
+  server:
+    image: fastshort/server:latest
+    restart: always
+    depends_on:
+      - mongodb
+      - minio
+    ports:
+      - "3000:3000"
+    environment:
+      PLATFORM: PROD
+      IN_DOCKER: "true"
+      PORT: 3000
+      APP_HOST: http://localhost:3000
+      MONGODB_HOST: mongodb://mongodb
+      MONGODB_DB: shorttv
+      JWT_SECRET: dev
+      JWT_SALTKEY: dev
+      S3_ENDPOINT: http://minio:9000
+      S3_BUCKET: fastshort
+      S3_KEY: minioadmin
+      S3_SECRET: minioadmin
+      S3_SITE: http://localhost:9000/fastshort/
+    command: sh -c "apk add --no-cache ffmpeg && mkdir -p /app/screenshots && node /app/app.js"
+    volumes:
+      - ./apps/server/config/prod.js:/app/config/prod.js:ro
+      - ./apps/server/app.js:/app/app.js:ro
+      - ./apps/server/route/public.js:/app/route/public.js:ro
+      - ./apps/server/route/admin/auth.js:/app/route/admin/auth.js:ro
+
+  minio-init:
+    image: minio/mc
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 minioadmin minioadmin;
+      mc mb -p local/fastshort;
+      mc anonymous set download local/fastshort;
+      exit 0;
+      "

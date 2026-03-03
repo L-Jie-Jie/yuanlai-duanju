@@ -1,0 +1,572 @@
+<template>
+  <view class="nxp-shell">
+    <!-- #ifdef APP -->
+    <likeEffect
+      v-if="isBurstHeartVisible"
+      v-model="isBurstHeartVisible"
+      :position="burstHeartPoint"
+    />
+
+    <view class="nxp-stage-wrap" :style="viewportStyle">
+      <list
+        @loadmore="handleFeedTail"
+        :loadmoreoffset="viewportH * 3"
+        @scroll="handleRailScroll"
+        :show-scrollbar="false"
+        :pagingEnabled="true"
+        :scrollable="true"
+      >
+        <refresh
+          class="nxp-refresh"
+          @refresh="finishRefreshing"
+          @pullingdown="markRefreshing"
+          :display="isRefreshSpinOn ? 'show' : 'hide'"
+        >
+          <loading style="background-color: #ffffff">
+            <image
+              src="@/static/img/index/logins.gif"
+              :style="
+                'width: 80upx; height: 40upx; margin-top: 80upx; margin-bottom: 30upx; margin-left: ' +
+                (viewportW - 200) +
+                'px;'
+              "
+            ></image>
+          </loading>
+        </refresh>
+
+        <cell v-for="(clipUnit, slotIndex) in reelDeck" :key="clipUnit._id || slotIndex">
+          <div :ref="slotIndex" :style="viewportStyle">
+            <view
+              v-if="Math.abs(activeSlot - slotIndex) <= 1"
+              class="nxp-frame-root"
+            >
+              <view class="nxp-video-wrap">
+                <video
+                  :id="buildClipDomId(clipUnit, slotIndex)"
+                  :loop="true"
+                  :src="resolveStreamUrl(clipUnit)"
+                  :muted="clipUnit.state !== 'play'"
+                  @play="markFrameReady(slotIndex)"
+                  :enable-progress-gesture="false"
+                  :page-gesture="false"
+                  :controls="false"
+                  :http-cache="true"
+                  :show-loading="false"
+                  show-fullscreen-btn="true"
+                  direction="0"
+                  :show-center-play-btn="false"
+                  :style="viewportStyle"
+                  object-fit="contain"
+                  @timeupdate="syncTimeline($event, slotIndex)"
+                ></video>
+              </view>
+
+              <view
+                class="nxp-touch-surface"
+                @touchstart="handleStageTap(clipUnit.state, $event)"
+                :style="viewportStyle"
+              >
+                <image
+                  v-if="clipUnit.state !== 'play'"
+                  class="nxp-pause-icon"
+                  src="@/static/img/index/play.png"
+                ></image>
+              </view>
+
+              <view class="nxp-bottom-lane">
+                <view class="nxp-copy-block" v-if="clipUnit">
+                  <text class="nxp-copy-title">{{ clipUnit.title }}</text>
+                  <text class="nxp-copy-desc">{{ clipUnit.description }}</text>
+                </view>
+
+                <view class="nxp-action-tray">
+                  <view class="nxp-tray-head" @click="toggleActionTray">
+                    <text class="nxp-tray-title">互动面板</text>
+                    <text class="nxp-tray-switch">
+                      {{ actionTrayOpen ? '收起' : '展开' }}
+                    </text>
+                  </view>
+
+                  <view v-if="actionTrayOpen" class="nxp-tray-row">
+                    <!--
+                    <view class="nxp-tray-cell nxp-avatar-cell">
+                      <avatar
+                        :avatar="Array.isArray(clipUnit.cover) ? clipUnit.cover[0] : ''"
+                        @click="handleProfileTap(slotIndex)"
+                      />
+                    </view>
+                    -->
+                    <view class="nxp-tray-cell">
+                      <like
+                        :like="clipUnit.like"
+                        :isLike="clipUnit.isLike"
+                        :series="clipUnit.series"
+                        @click="toggleThumb"
+                      />
+                    </view>
+                    <!--
+                    <view class="nxp-tray-cell">
+                      <comment
+                        :total="clipUnit.comments"
+                        :index="slotIndex"
+                        @click="revealCommentSheet"
+                      />
+                    </view>
+                    -->
+                    <view class="nxp-tray-cell">
+                      <share @click="handleSharePress" />
+                    </view>
+                  </view>
+                </view>
+              </view>
+            </view>
+          </div>
+        </cell>
+      </list>
+
+      <progressbar
+        :totalTime="totalSeconds"
+        :currentTime="elapsedSeconds"
+        @seek="seekTimeline"
+      ></progressbar>
+    </view>
+
+    <!--
+    <uni-popup ref="commentSheetRef">
+      <comments @closeComment="hideCommentSheet"></comments>
+    </uni-popup>
+    -->
+    <!-- #endif -->
+  </view>
+</template>
+
+<script>
+import progressbar from '@/pages/viewer/native/progressbar.vue'
+import likeEffect from '@/components/likeEffect.vue'
+import like from '@/components/like.vue'
+import share from '@/components/share.vue'
+import request from '@/common/request'
+
+export default {
+  components: {
+    progressbar,
+    likeEffect,
+    like,
+    share
+  },
+  data() {
+    return {
+      reelDeck: [],
+      clipBridgeMap: {},
+      activeSlot: -1,
+
+      isRefreshSpinOn: true,
+
+      viewportW: 0,
+      viewportH: 0,
+      tabDockH: 0,
+
+      devicePlatform: '',
+      isRailDragging: false,
+
+      totalSeconds: 0,
+      elapsedSeconds: 0,
+
+      allowAutoAdvance: false,
+
+      tapBurstCount: 0,
+      tapBurstTimer: null,
+      isBurstHeartVisible: false,
+      burstHeartPoint: {},
+
+      haltTimer: null,
+      warmupTimer: null,
+      slideSnapTimer: null,
+
+      actionTrayOpen: true
+    }
+  },
+
+  watch: {
+    activeSlot(nextSlot, prevSlot) {
+      if (nextSlot >= 0) {
+        this.resetStream(prevSlot)
+        this.igniteStream(nextSlot)
+      }
+    }
+  },
+  computed: {
+    viewportStyle() {
+      return `width: ${this.viewportW}px; height: ${
+        this.viewportH - this.tabDockH
+      }px;`
+    },
+    isStreamPrimed() {
+      return this.reelDeck.length > 0 && this.activeSlot >= 0
+    }
+  },
+  onShow() {
+    if (this.isStreamPrimed) {
+      this.reelDeck[this.activeSlot].state = 'play'
+      this.accessClipBridge(this.activeSlot).play()
+    }
+  },
+  onHide() {
+    if (this.isStreamPrimed) {
+      this.reelDeck[this.activeSlot].state = 'pause'
+      this.accessClipBridge(this.activeSlot).pause()
+    }
+  },
+  beforeDestroy() {
+    clearTimeout(this.tapBurstTimer)
+    clearTimeout(this.haltTimer)
+    clearTimeout(this.warmupTimer)
+    clearTimeout(this.slideSnapTimer)
+  },
+  async onLoad(option) {
+    const sys = uni.getSystemInfoSync()
+    this.viewportW = sys.screenWidth
+    this.viewportH = sys.screenHeight
+    this.devicePlatform = sys.platform
+
+    const compactIosModels = ['iPhone6', 'iPhone6s', 'iPhone7', 'iPhone8']
+    if (this.devicePlatform === 'ios' && !compactIosModels.includes(sys.model)) {
+      this.tabDockH = 82
+    } else {
+      this.tabDockH = 50
+    }
+
+    await this.hydrateFeed(option)
+  },
+  methods: {
+    resolveStreamUrl(clipUnit) {
+      if (!clipUnit) return ''
+      if (Array.isArray(clipUnit.video)) {
+        return clipUnit.video[0] || ''
+      }
+      if (typeof clipUnit.video === 'string') {
+        return clipUnit.video
+      }
+      return ''
+    },
+    buildClipDomId(clipUnit, slotIndex) {
+      if (clipUnit && clipUnit._id) {
+        return String(clipUnit._id)
+      }
+      return `clip-slot-${slotIndex}`
+    },
+    accessClipBridge(slotIndex) {
+      if (this.clipBridgeMap[slotIndex]) {
+        return this.clipBridgeMap[slotIndex]
+      }
+      const domId = this.buildClipDomId(this.reelDeck[slotIndex], slotIndex)
+      const bridge = uni.createVideoContext(domId, this)
+      this.clipBridgeMap[slotIndex] = bridge
+      return bridge
+    },
+    igniteStream(slotIndex) {
+      if (slotIndex < 0 || slotIndex >= this.reelDeck.length) {
+        return
+      }
+      this.reelDeck[slotIndex].state = 'play'
+      setTimeout(() => {
+        const bridge = this.accessClipBridge(slotIndex)
+        if (this.devicePlatform === 'ios') {
+          bridge.play()
+        } else {
+          bridge.pause()
+          bridge.play()
+        }
+      }, 100)
+
+      if (slotIndex + 2 < this.reelDeck.length) {
+        setTimeout(() => {
+          const nextBridge = this.accessClipBridge(slotIndex + 1)
+          nextBridge.play()
+          clearTimeout(this.warmupTimer)
+          this.warmupTimer = setTimeout(() => {
+            nextBridge.seek(0)
+            nextBridge.pause()
+          }, 1500)
+        }, 500)
+      }
+    },
+    resetStream(slotIndex) {
+      if (slotIndex < 0 || slotIndex >= this.reelDeck.length) {
+        return
+      }
+      this.reelDeck[slotIndex].state = 'stop'
+      clearTimeout(this.haltTimer)
+      this.haltTimer = setTimeout(() => {
+        const bridge = this.accessClipBridge(slotIndex)
+        bridge.pause()
+        bridge.seek(0)
+      }, 500)
+    },
+    async hydrateFeed(option) {
+      const rawPayload = await request.post('/public/short')
+      this.reelDeck = Array.isArray(rawPayload) ? rawPayload : []
+
+      const presetSlot = option && option.index ? Number(option.index) : 0
+      if (presetSlot > 0 && presetSlot < this.reelDeck.length) {
+        this.jumpToSlot(presetSlot, false)
+      } else {
+        this.activeSlot = 0
+      }
+    },
+    jumpToSlot(slotIndex, animated = false) {
+      this.$nextTick(() => {
+        setTimeout(() => {
+          const dom = uni.requireNativePlugin('dom')
+          const slotRef = this.$refs[slotIndex] && this.$refs[slotIndex][0]
+          if (!slotRef) {
+            return
+          }
+          dom.scrollToElement(slotRef, {
+            offset: 0,
+            animated
+          })
+          this.activeSlot = slotIndex
+        }, 100)
+      })
+    },
+    handleFeedTail() {},
+    handleRailScroll(event) {
+      this.isRailDragging = event.isDragging
+      if (event.isDragging) {
+        return
+      }
+      const nextSlot = Math.round(
+        Math.abs(event.contentOffset.y) / (this.viewportH - this.tabDockH + 1)
+      )
+      if (nextSlot !== this.activeSlot && this.activeSlot >= 0) {
+        clearTimeout(this.slideSnapTimer)
+        this.slideSnapTimer = setTimeout(() => {
+          this.activeSlot = nextSlot
+        }, 80)
+      }
+    },
+    handleStageTap(playbackState, event) {
+      if (this.activeSlot < 0) {
+        return
+      }
+      this.tapBurstCount += 1
+      clearTimeout(this.tapBurstTimer)
+      this.tapBurstTimer = setTimeout(() => {
+        if (this.tapBurstCount === 1) {
+          if (playbackState === 'play') {
+            this.reelDeck[this.activeSlot].state = 'pause'
+            this.accessClipBridge(this.activeSlot).pause()
+          } else {
+            this.reelDeck[this.activeSlot].state = 'play'
+            this.accessClipBridge(this.activeSlot).play()
+          }
+        } else if (this.tapBurstCount > 1) {
+          this.triggerBurstLike(event)
+        }
+        this.tapBurstCount = 0
+      }, 350)
+    },
+    triggerBurstLike(event) {
+      const liveClip = this.reelDeck[this.activeSlot]
+      if (!liveClip) {
+        return
+      }
+      if (!liveClip.isLike) {
+        liveClip.like += 1
+        liveClip.isLike = true
+      }
+      const touchPoint = event && event.touches && event.touches[0]
+      this.burstHeartPoint = touchPoint || {}
+      this.isBurstHeartVisible = true
+    },
+    seekTimeline(nextSecond) {
+      if (this.activeSlot < 0) {
+        return
+      }
+      const bridge = this.accessClipBridge(this.activeSlot)
+      bridge.seek(nextSecond)
+      bridge.play()
+      this.reelDeck[this.activeSlot].state = 'play'
+    },
+    syncTimeline(event, slotIndex) {
+      if (slotIndex !== this.activeSlot) {
+        return
+      }
+      this.totalSeconds = event.detail.duration
+      this.elapsedSeconds = event.detail.currentTime
+
+      if (
+        this.allowAutoAdvance &&
+        event.detail.currentTime + 1 >= event.detail.duration
+      ) {
+        const nextSlot = this.activeSlot + 1
+        if (nextSlot < this.reelDeck.length) {
+          this.jumpToSlot(nextSlot, true)
+        }
+      }
+    },
+    markRefreshing() {
+      this.isRefreshSpinOn = true
+    },
+    finishRefreshing() {
+      setTimeout(() => {
+        this.isRefreshSpinOn = false
+      }, 1000)
+    },
+    revealCommentSheet(slotIndex) {
+      const clipSlot =
+        typeof slotIndex === 'number' ? slotIndex : this.activeSlot
+      const selected = this.reelDeck[clipSlot]
+      if (selected && selected._id) {
+        uni.setStorageSync('videoID', selected._id)
+      }
+      this.$refs.commentSheetRef.open('bottom')
+    },
+    hideCommentSheet() {
+      this.$refs.commentSheetRef.close()
+    },
+    handleSharePress() {
+      uni.showToast({
+        title: '分享',
+        icon: 'none'
+      })
+    },
+    toggleThumb(previousLikeState) {
+      const liveClip = this.reelDeck[this.activeSlot]
+      if (!liveClip) {
+        return
+      }
+      liveClip.isLike = !liveClip.isLike
+      if (previousLikeState) {
+        liveClip.like = liveClip.like > 0 ? liveClip.like - 1 : 0
+      } else {
+        liveClip.like += 1
+      }
+    },
+    handleProfileTap() {},
+    markFrameReady(slotIndex) {
+      setTimeout(() => {
+        if (this.reelDeck[slotIndex]) {
+          this.reelDeck[slotIndex].playIng = true
+        }
+      }, 200)
+    },
+    toggleActionTray() {
+      this.actionTrayOpen = !this.actionTrayOpen
+    }
+  }
+}
+</script>
+
+<style scoped>
+.nxp-shell {
+  background-color: #000000;
+}
+
+.nxp-stage-wrap {
+  position: relative;
+  background-color: #000000;
+  width: 100%;
+  height: 100%;
+}
+
+.nxp-frame-root {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.nxp-video-wrap {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.nxp-touch-surface {
+  position: absolute;
+  top: 0;
+  left: 0;
+  flex: 1;
+  justify-content: center;
+  align-items: center;
+  background-color: rgba(0, 0, 0, 0.08);
+}
+
+.nxp-pause-icon {
+  width: 150rpx;
+  height: 150rpx;
+  opacity: 0.25;
+}
+
+.nxp-bottom-lane {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 24rpx;
+  padding-left: 20rpx;
+  padding-right: 20rpx;
+  flex-direction: column;
+}
+
+.nxp-copy-block {
+  background-color: rgba(0, 0, 0, 0.22);
+  border-radius: 20rpx;
+  padding: 18rpx 20rpx;
+}
+
+.nxp-copy-title {
+  color: #ffffff;
+  font-size: 30rpx;
+  font-weight: 600;
+}
+
+.nxp-copy-desc {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 24rpx;
+  margin-top: 8rpx;
+}
+
+.nxp-action-tray {
+  margin-top: 14rpx;
+  background-color: rgba(0, 0, 0, 0.35);
+  border-radius: 24rpx;
+  padding: 8rpx 14rpx 12rpx;
+}
+
+.nxp-tray-head {
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 8rpx;
+  padding-bottom: 8rpx;
+}
+
+.nxp-tray-title {
+  color: #ffffff;
+  font-size: 22rpx;
+}
+
+.nxp-tray-switch {
+  color: #89d8ff;
+  font-size: 22rpx;
+}
+
+.nxp-tray-row {
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding-top: 6rpx;
+}
+
+.nxp-tray-cell {
+  min-width: 130rpx;
+  min-height: 110rpx;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.nxp-avatar-cell {
+  padding-bottom: 8rpx;
+}
+</style>

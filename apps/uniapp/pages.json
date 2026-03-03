@@ -1,0 +1,152 @@
+{
+    "pages": [
+        {
+            "path": "pages/home/main",
+            "style": {
+                "app-plus": {
+                    "titleNView": false
+                }
+            }
+        },
+        {
+            "path": "pages/follow/index",
+            "style": {
+                "app-plus": {
+                    "titleNView": false
+                }
+            }
+        },
+        {
+            "path": "pages/history/index",
+            "style": {
+                "app-plus": {
+                    "titleNView": false
+                }
+            }
+        },
+        // #ifdef APP
+        {
+            "path": "pages/viewer/native/clips",
+            "style": {
+                "app-plus": {
+                    "titleNView": false,
+                    "bounce": "none"
+                }
+            }
+        },
+        {
+            "path": "pages/viewer/native/collection",
+            "style": {
+                "app-plus": {
+                    "titleNView": false,
+                    "bounce": "none"
+                }
+            }
+        },
+        // #endif
+        // #ifdef WEB || MP-WEIXIN
+        {
+            "path": "pages/viewer/web/clips",
+            "style": {
+                "app-plus": {
+                    "titleNView": false,
+                    "bounce": "none"
+                }
+            }
+        },
+        {
+            "path": "pages/viewer/web/collection",
+            "style": {
+                "app-plus": {
+                    "titleNView": false,
+                    "bounce": "none"
+                }
+            }
+        },
+        // #endif
+        {
+            "path": "pages/account/bookmark",
+            "style": {
+                "app-plus": {
+                    "titleNView": false
+                }
+            }
+        },
+        {
+            "path": "pages/account/center",
+            "style": {
+                "app-plus": {
+                    "titleNView": false
+                }
+            }
+        },
+        {
+            "path": "pages/account/recharge",
+            "style": {
+                "app-plus": {
+                    "titleNView": false
+                }
+            }
+        },
+        {
+            "path": "pages/account/balance",
+            "style": {
+                "app-plus": {
+                    "titleNView": false
+                }
+            }
+        },
+        {
+            "path": "pages/account/signup",
+            "style": {
+                "app-plus": {
+                    "titleNView": false
+                }
+            }
+        },
+        {
+            "path": "pages/account/signin",
+            "style": {
+                "app-plus": {
+                    "titleNView": false
+                }
+            }
+        }
+    ],
+    "tabBar": {
+        "custom": true,
+        "color": "rgba(255, 255, 255, 0.4)",
+        "selectedColor": "#E5B567",
+        "backgroundColor": "rgba(18, 18, 20, 0.85)",
+        "borderStyle": "black",
+        "list": [
+            {
+                "pagePath": "pages/home/main",
+                "text": "首页"
+            },
+            {
+                "pagePath": "pages/follow/index",
+                "text": "追剧"
+            },
+            {
+                "pagePath": "pages/viewer/web/clips",
+                "text": "剧场"
+            },
+            {
+                "pagePath": "pages/history/index",
+                "text": "历史"
+            },
+            {
+                "pagePath": "pages/account/center",
+                "text": "我的"
+            }
+        ]
+    },
+    "globalStyle": {
+        "navigationBarTextStyle": "white",
+        "navigationBarTitleText": "%app.name%",
+        "navigationBarBackgroundColor": "#050505",
+        "backgroundColor": "#050505",
+        "navigationStyle": "custom"
+    }
+}
